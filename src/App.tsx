@@ -160,6 +160,7 @@ export default function App() {
       position.gmMove,
       moves,
       userMoveEval,
+      gmEval,
     );
     const delta = record(moveResult.points);
     setLastDelta(delta);
