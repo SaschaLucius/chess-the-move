@@ -64,6 +64,7 @@ export function useStockfish() {
   const workerRef = useRef<Worker | null>(null)
   const pendingRef = useRef<PendingAnalysis | null>(null)
   const readyRef = useRef(false)
+  const waitersRef = useRef<Array<() => void>>([])
   const [status, setStatus] = useState<EngineStatus>('loading')
 
   useEffect(() => {
@@ -82,6 +83,8 @@ export function useStockfish() {
         if (!readyRef.current) {
           readyRef.current = true
           setStatus('ready')
+          waitersRef.current.forEach(r => r())
+          waitersRef.current = []
         }
         return
       }
@@ -118,6 +121,7 @@ export function useStockfish() {
     return () => {
       cancelled = true
       readyRef.current = false
+      waitersRef.current = []
       // Reject nothing here: the app only analyzes in response to user actions,
       // so no analysis is in flight across mount/unmount in normal use.
       pendingRef.current = null
@@ -141,5 +145,12 @@ export function useStockfish() {
     })
   }, [])
 
-  return { status, analyze }
+  const waitForReady = useCallback((): Promise<void> => {
+    if (readyRef.current) return Promise.resolve()
+    return new Promise(resolve => {
+      waitersRef.current.push(resolve)
+    })
+  }, [])
+
+  return { status, analyze, waitForReady }
 }

@@ -15,7 +15,7 @@ import "./App.css";
 type Phase = "loading" | "playing" | "result";
 
 export default function App() {
-  const { status: engineStatus, analyze } = useStockfish();
+  const { status: engineStatus, analyze, waitForReady } = useStockfish();
   const { fetchPosition } = useLichess();
   const { scoreState, record } = useScore();
 
@@ -32,6 +32,9 @@ export default function App() {
 
   // Prevent double-loading in React StrictMode or fast click.
   const loadingRef = useRef(false);
+  // Keep a ref-copy of engineStatus so callbacks can read it without stale closures.
+  const engineStatusRef = useRef(engineStatus);
+  useEffect(() => { engineStatusRef.current = engineStatus; }, [engineStatus]);
   // Holds the pre-calculated analysis promise started as soon as a position
   // loads, so the engine has already been thinking while the user considers.
   const preAnalysisRef = useRef<Promise<EngineMove[]> | null>(null);
@@ -82,7 +85,11 @@ export default function App() {
         // No prefetch or it failed — fetch now with loading indicator.
         setPhase("loading");
         pos = await fetchPosition();
-        preAnalysisRef.current = analyze(pos.fen);
+        // Start pre-analysis only if engine is already ready; otherwise the
+        // engineStatus effect below will kick it off once the engine is ready.
+        if (engineStatusRef.current === 'ready') {
+          preAnalysisRef.current = analyze(pos.fen);
+        }
       }
 
       setPosition(pos);
@@ -92,22 +99,37 @@ export default function App() {
     }
   }, [fetchPosition]);
 
-  // Load the first position once the engine is ready.
+  // Load the first position immediately on mount (engine loads in parallel).
   useEffect(() => {
-    if (engineStatus === "ready" && phase === "loading" && position === null) {
-      void loadNextPosition();
+    void loadNextPosition();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Once the engine becomes ready: if we already have a position but haven't
+  // started pre-analysis yet (engine was still loading when position arrived),
+  // kick it off now.
+  useEffect(() => {
+    if (engineStatus === 'ready' && position !== null && preAnalysisRef.current === null) {
+      preAnalysisRef.current = analyze(position.fen);
     }
-  }, [engineStatus, phase, position, loadNextPosition]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [engineStatus]);
 
   async function handleMove(uci: string) {
     if (phase !== "playing" || !position) return;
     setPhase("loading");
 
+    // If the engine was still loading when this position arrived, pre-analysis
+    // hasn't started yet. Wait for the engine, then start (or reuse) it.
+    await waitForReady();
+    if (!preAnalysisRef.current) {
+      preAnalysisRef.current = analyze(position.fen);
+    }
+
     let moves: EngineMove[] = [];
     try {
       // Await the analysis that started while the user was thinking.
-      // Falls back to a fresh analysis if the pre-calc promise is missing.
-      moves = await (preAnalysisRef.current ?? analyze(position.fen));
+      moves = await preAnalysisRef.current;
       preAnalysisRef.current = null;
       setEngineMoves(moves);
     } catch (err) {
@@ -199,11 +221,7 @@ export default function App() {
         {phase === "loading" && !position && (
           <div className="loading-overlay">
             <div className="spinner" />
-            <p>
-              {engineStatus === "loading"
-                ? "Loading Stockfish 18…"
-                : "Loading position…"}
-            </p>
+            <p>Loading position…</p>
           </div>
         )}
 
@@ -235,7 +253,11 @@ export default function App() {
             {phase === "loading" && (
               <div className="analyzing-indicator">
                 <div className="spinner spinner--sm" />
-                <span>Analyzing…</span>
+                <span>
+                  {engineStatus === "loading"
+                    ? "Loading Stockfish 18…"
+                    : "Analyzing…"}
+                </span>
               </div>
             )}
           </>
