@@ -215,6 +215,7 @@
 .badge--engine2 { background: #713f12; color: #fef08a; } /* yellow — matches #eab308 arrow */
 .badge--engine3 { background: #7c2d12; color: #fed7aa; } /* orange — matches #f97316 arrow */
 .badge--miss    { background: #7f1d1d; color: #fee2e2; } /* red    — matches #ef4444 arrow */
+.badge--you     { background: #1e3a8a; color: #93c5fd; border: 1px solid #60a5fa; }
 
 .move-san {
   flex: 1;

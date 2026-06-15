@@ -89,8 +89,9 @@ export function FeedbackPanel({ result, gmMove, gmMoveEval, engineMoves, onNext 
 
       <div className="feedback-moves">
         {!gmInTop3 && (
-          <div className="feedback-move feedback-move--gm">
+          <div className={`feedback-move feedback-move--gm${result.playerMove === gmMove ? ' feedback-move--player' : ''}`}>
             <span className="badge badge--gm">GM</span>
+            {result.playerMove === gmMove && <span className="badge badge--you">YOU</span>}
             <span className="move-san">{gmMove.slice(0, 2)}→{gmMove.slice(2, 4)}</span>
             {gmMoveEval !== undefined && (
               <span className="move-eval">{formatEval(gmMoveEval)}</span>
@@ -107,6 +108,7 @@ export function FeedbackPanel({ result, gmMove, gmMoveEval, engineMoves, onNext 
           >
             <span className={`badge badge--engine${em.rank}`}>#{em.rank}</span>
             {em.uci === gmMove && <span className="badge badge--gm">GM</span>}
+            {em.uci === result.playerMove && <span className="badge badge--you">YOU</span>}
             <span className="move-san">{em.uci.slice(0, 2)}→{em.uci.slice(2, 4)}</span>
             <span className="move-eval">{formatEval(em.evaluation)}</span>
           </div>
