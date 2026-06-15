@@ -3,16 +3,18 @@ import type { Position } from '../types'
 import { curatedGames } from '../data/curatedGames'
 import { pickPositionFromPgn, labelFromPgn } from '../utils/pgn'
 
-// Active titled streamers/players with public rated games on Lichess.
+// Active titled players with public rated games on Lichess (verified 2025-06).
 const TITLED_PLAYERS = [
-  'DrNykterstein', // Carlsen
-  'nihalsarin2004',
-  'AnishGiri',
-  'Hikaru',
-  'GothamChess',
-  'IlyaSmirin',
-  'DanielNaroditsky',
-  'Firouzja2003',
+  'DrNykterstein',    // Magnus Carlsen, GM
+  'nihalsarin2004',   // Nihal Sarin, GM
+  'AnishGiri',        // Anish Giri, GM
+  'Konevlad',         // Vladislav Artemiev, GM
+  'Lintchevski_Daniil', // Daniil Lintchevski, GM
+  'Abik02',           // Abdulla Gadimbayli, GM – World Junior Champion 2022
+  'Zkid',             // Steven Zierk, GM
+  'RealDavidNavara',  // David Navara, GM
+  'penguingim1',      // Andrew Tang, GM
+  'EricRosen',        // Eric Rosen, IM
 ]
 
 const PERF_TYPES = 'blitz,rapid'
