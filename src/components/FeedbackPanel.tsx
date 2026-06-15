@@ -6,6 +6,7 @@ interface FeedbackPanelProps {
   gmMove: string;
   gmMoveEval?: Evaluation;
   engineMoves: EngineMove[];
+  pointsDelta: number;
   onNext: () => void;
 }
 
@@ -17,10 +18,11 @@ function formatEval(ev: Evaluation): string {
   return pawns >= 0 ? `+${pawns.toFixed(2)}` : pawns.toFixed(2);
 }
 
-function pointsClass(points: number): string {
-  if (points === 3) return "pts pts--3";
-  if (points === 2) return "pts pts--2";
-  if (points === 1) return "pts pts--1";
+function pointsClass(delta: number): string {
+  if (delta < 0) return "pts pts--negative";
+  if (delta >= 3) return "pts pts--3";
+  if (delta === 2) return "pts pts--2";
+  if (delta === 1) return "pts pts--1";
   return "pts pts--0";
 }
 
@@ -69,14 +71,23 @@ export function FeedbackPanel({
   gmMove,
   gmMoveEval,
   engineMoves,
+  pointsDelta,
   onNext,
 }: FeedbackPanelProps) {
   const gmInTop3 = engineMoves.some((em) => em.uci === gmMove);
+  const streakBonus = pointsDelta > 0 ? pointsDelta - result.points : 0;
 
   return (
     <div className="feedback-panel">
-      <div className={pointsClass(result.points)}>
-        {result.points === 0 ? "0 pts" : `+${result.points} pts`}
+      <div className={pointsClass(pointsDelta)}>
+        {pointsDelta < 0
+          ? `${pointsDelta} pt`
+          : pointsDelta === 0
+            ? "0 pts"
+            : `+${pointsDelta} pts`}
+        {streakBonus > 0 && (
+          <span className="pts__streak-bonus"> (+{streakBonus}🔥)</span>
+        )}
       </div>
 
       <div className="feedback-moves">

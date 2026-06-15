@@ -202,6 +202,15 @@
 .pts--0 {
   color: #f87171;
 }
+.pts--negative {
+  color: #ef4444;
+}
+
+.pts__streak-bonus {
+  font-size: 0.85em;
+  font-weight: 600;
+  opacity: 0.85;
+}
 
 .feedback-reason {
   text-align: center;
