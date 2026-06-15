@@ -85,7 +85,6 @@ export function FeedbackPanel({ result, gmMove, gmMoveEval, engineMoves, onNext 
       <div className={pointsClass(result.points)}>
         {result.points === 0 ? '0 pts' : `+${result.points} pts`}
       </div>
-      <p className="feedback-reason">{reasonLabel(result.reason)}</p>
 
       <div className="feedback-moves">
         {!gmInTop3 && (
