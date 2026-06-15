@@ -71,6 +71,13 @@ export default function App() {
         prefetchResultRef.current = undefined;
       }
 
+      // If the prefetch fell back to curated, discard it and try Lichess fresh
+      // so we recover as soon as the API comes back up.
+      if (pos?.source === 'curated') {
+        preAnalysisRef.current = null;
+        pos = null;
+      }
+
       if (!pos) {
         // No prefetch or it failed — fetch now with loading indicator.
         setPhase("loading");
