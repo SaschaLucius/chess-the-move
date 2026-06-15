@@ -66,6 +66,18 @@ export function buildResultArrows(
   return arrows;
 }
 
+/** Convert an evaluation to a numeric score for sorting (higher = better). */
+function evalScore(ev: Evaluation | undefined, unknownFallback = Infinity): number {
+  if (ev === undefined) return unknownFallback;
+  if (ev.type === "mate") return ev.value > 0 ? 100000 - ev.value : -100000 - ev.value;
+  return ev.value;
+}
+
+type ListItem =
+  | { kind: "gm" }
+  | { kind: "engine"; move: EngineMove }
+  | { kind: "miss" };
+
 export function FeedbackPanel({
   result,
   gmMove,
@@ -76,6 +88,25 @@ export function FeedbackPanel({
 }: FeedbackPanelProps) {
   const gmInTop3 = engineMoves.some((em) => em.uci === gmMove);
   const streakBonus = pointsDelta > 0 ? pointsDelta - result.points : 0;
+
+  const isPlayerMiss = result.engineRank === null && result.playerMove !== gmMove;
+
+  // Build a sorted list of moves (engine + GM if separate + player miss), best first.
+  const sortedItems: ListItem[] = [
+    ...engineMoves.map((move): ListItem => ({ kind: "engine", move })),
+    ...(!gmInTop3 ? [{ kind: "gm" } as ListItem] : []),
+    ...(isPlayerMiss ? [{ kind: "miss" } as ListItem] : []),
+  ].sort((a, b) => {
+    const sa =
+      a.kind === "gm" ? evalScore(gmMoveEval, Infinity) :
+      a.kind === "miss" ? evalScore(result.userMoveEval, -Infinity) :
+      evalScore(a.move.evaluation);
+    const sb =
+      b.kind === "gm" ? evalScore(gmMoveEval, Infinity) :
+      b.kind === "miss" ? evalScore(result.userMoveEval, -Infinity) :
+      evalScore(b.move.evaluation);
+    return sb - sa;
+  });
 
   return (
     <div className="feedback-panel">
@@ -91,53 +122,56 @@ export function FeedbackPanel({
       </div>
 
       <div className="feedback-moves">
-        {!gmInTop3 && (
-          <div
-            className={`feedback-move feedback-move--gm${result.playerMove === gmMove ? " feedback-move--player" : ""}`}
-          >
-            <span className="badge badge--gm">GM</span>
-            {result.playerMove === gmMove && (
-              <span className="badge badge--you">YOU</span>
-            )}
-            <span className="move-san">
-              {gmMove.slice(0, 2)}→{gmMove.slice(2, 4)}
-            </span>
-            {gmMoveEval !== undefined && (
-              <span className="move-eval">{formatEval(gmMoveEval)}</span>
-            )}
-          </div>
-        )}
-
-        {engineMoves.map((em) => (
-          <div
-            key={em.rank}
-            className={`feedback-move feedback-move--engine${em.rank}${
-              em.uci === result.playerMove ? " feedback-move--player" : ""
-            }${em.uci === gmMove ? " feedback-move--gm-merged" : ""}`}
-          >
-            <span className={`badge badge--engine${em.rank}`}>#{em.rank}</span>
-            {em.uci === gmMove && <span className="badge badge--gm">GM</span>}
-            {em.uci === result.playerMove && (
-              <span className="badge badge--you">YOU</span>
-            )}
-            <span className="move-san">
-              {em.uci.slice(0, 2)}→{em.uci.slice(2, 4)}
-            </span>
-            <span className="move-eval">{formatEval(em.evaluation)}</span>
-          </div>
-        ))}
-
-        {result.engineRank === null && result.playerMove !== gmMove && (
-          <div className="feedback-move feedback-move--miss">
-            <span className="badge badge--miss">You</span>
-            <span className="move-san">{result.playerSan}</span>
-            {result.userMoveEval !== undefined && (
-              <span className="move-eval">
-                {formatEval(result.userMoveEval)}
+        {sortedItems.map((item) =>
+          item.kind === "gm" ? (
+            <div
+              key="gm"
+              className={`feedback-move feedback-move--gm${result.playerMove === gmMove ? " feedback-move--player" : ""}`}
+            >
+              <span className="badge badge--gm">GM</span>
+              {result.playerMove === gmMove && (
+                <span className="badge badge--you">YOU</span>
+              )}
+              <span className="move-san">
+                {gmMove.slice(0, 2)}→{gmMove.slice(2, 4)}
               </span>
-            )}
-          </div>
+              {gmMoveEval !== undefined && (
+                <span className="move-eval">{formatEval(gmMoveEval)}</span>
+              )}
+            </div>
+          ) : item.kind === "miss" ? (
+            <div
+              key="miss"
+              className="feedback-move feedback-move--miss"
+            >
+              <span className="badge badge--miss">You</span>
+              <span className="move-san">{result.playerSan}</span>
+              {result.userMoveEval !== undefined && (
+                <span className="move-eval">
+                  {formatEval(result.userMoveEval)}
+                </span>
+              )}
+            </div>
+          ) : (
+            <div
+              key={item.move.rank}
+              className={`feedback-move feedback-move--engine${item.move.rank}${
+                item.move.uci === result.playerMove ? " feedback-move--player" : ""
+              }${item.move.uci === gmMove ? " feedback-move--gm-merged" : ""}`}
+            >
+              <span className={`badge badge--engine${item.move.rank}`}>#{item.move.rank}</span>
+              {item.move.uci === gmMove && <span className="badge badge--gm">GM</span>}
+              {item.move.uci === result.playerMove && (
+                <span className="badge badge--you">YOU</span>
+              )}
+              <span className="move-san">
+                {item.move.uci.slice(0, 2)}→{item.move.uci.slice(2, 4)}
+              </span>
+              <span className="move-eval">{formatEval(item.move.evaluation)}</span>
+            </div>
+          )
         )}
+
       </div>
 
       <button className="btn-next" onClick={onNext}>
