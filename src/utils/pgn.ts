@@ -15,7 +15,7 @@ function materialPoints(fenBoard: string, color: 'white' | 'black'): number {
 /**
  * Parse a PGN string and extract a random middlegame position from it.
  *
- * "Middlegame" is defined as: full-move number ≥ 8 and both sides have more
+ * "Middlegame" is defined as: full-move number ≥ 12 and both sides have more
  * than 13 material points (Speelman's threshold: Q=9, R=5, B=3, N=3, P=1,
  * king excluded), and not the very last move of the game (so there is always
  * a next move to guess). Returns null when the PGN is invalid or no
@@ -46,7 +46,7 @@ export function pickPositionFromPgn(
       const side = fields[1] === 'w' ? 'white' : 'black'
       const whiteMat = materialPoints(board, 'white')
       const blackMat = materialPoints(board, 'black')
-      return fullmove >= 8 && whiteMat > 13 && blackMat > 13 && (gmColor === undefined || side === gmColor)
+      return fullmove >= 12 && whiteMat > 13 && blackMat > 13 && (gmColor === undefined || side === gmColor)
     })
 
   if (candidates.length === 0) return null
