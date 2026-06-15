@@ -150,7 +150,7 @@ export function FeedbackPanel({
               className="feedback-move feedback-move--miss"
             >
               <span className="badge badge--miss">You</span>
-              <span className="move-san">{result.playerSan}</span>
+              <span className="move-san">{result.playerMove.slice(0, 2)}→{result.playerMove.slice(2, 4)}</span>
               {result.userMoveEval !== undefined && (
                 <span className="move-eval">
                   {formatEval(result.userMoveEval)}
