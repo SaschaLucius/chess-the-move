@@ -101,7 +101,7 @@ export function FeedbackPanel({ result, gmMove, engineMoves, onNext }: FeedbackP
               em.uci === result.playerMove ? ' feedback-move--player' : ''
             }${em.uci === gmMove ? ' feedback-move--gm-merged' : ''}`}
           >
-            <span className="badge badge--engine">#{em.rank}</span>
+            <span className={`badge badge--engine${em.rank}`}>#{em.rank}</span>
             {em.uci === gmMove && <span className="badge badge--gm">GM</span>}
             <span className="move-san">{em.uci.slice(0, 2)}→{em.uci.slice(2, 4)}</span>
             <span className="move-eval">{formatEval(em.evaluation)}</span>

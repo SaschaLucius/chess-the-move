@@ -196,9 +196,11 @@
   text-align: center;
 }
 
-.badge--gm   { background: #15803d; color: #dcfce7; }
-.badge--engine { background: #1d4ed8; color: #dbeafe; }
-.badge--miss { background: #991b1b; color: #fee2e2; }
+.badge--gm      { background: #14532d; color: #dcfce7; } /* green  — matches #22c55e arrow */
+.badge--engine1 { background: #1e3a8a; color: #dbeafe; } /* blue   — matches #3b82f6 arrow */
+.badge--engine2 { background: #713f12; color: #fef08a; } /* yellow — matches #eab308 arrow */
+.badge--engine3 { background: #7c2d12; color: #fed7aa; } /* orange — matches #f97316 arrow */
+.badge--miss    { background: #7f1d1d; color: #fee2e2; } /* red    — matches #ef4444 arrow */
 
 .move-san {
   flex: 1;
