@@ -97,6 +97,11 @@ export function FeedbackPanel({
     ...(!gmInTop3 ? [{ kind: "gm" } as ListItem] : []),
     ...(isPlayerMiss ? [{ kind: "miss" } as ListItem] : []),
   ].sort((a, b) => {
+    // Engine moves are ranked by Stockfish itself; use that rank directly so
+    // that small cross-depth evaluation differences don't re-order #1/#2/#3.
+    if (a.kind === "engine" && b.kind === "engine") {
+      return a.move.rank - b.move.rank;
+    }
     const sa =
       a.kind === "gm" ? evalScore(gmMoveEval, Infinity) :
       a.kind === "miss" ? evalScore(result.userMoveEval, -Infinity) :
