@@ -4,6 +4,7 @@ import type { BoardArrow } from './Board'
 interface FeedbackPanelProps {
   result: MoveResult
   gmMove: string
+  gmMoveEval?: Evaluation
   engineMoves: EngineMove[]
   onNext: () => void
 }
@@ -76,7 +77,7 @@ export function buildResultArrows(
   return arrows
 }
 
-export function FeedbackPanel({ result, gmMove, engineMoves, onNext }: FeedbackPanelProps) {
+export function FeedbackPanel({ result, gmMove, gmMoveEval, engineMoves, onNext }: FeedbackPanelProps) {
   const gmInTop3 = engineMoves.some((em) => em.uci === gmMove)
 
   return (
@@ -91,6 +92,9 @@ export function FeedbackPanel({ result, gmMove, engineMoves, onNext }: FeedbackP
           <div className="feedback-move feedback-move--gm">
             <span className="badge badge--gm">GM</span>
             <span className="move-san">{gmMove.slice(0, 2)}→{gmMove.slice(2, 4)}</span>
+            {gmMoveEval !== undefined && (
+              <span className="move-eval">{formatEval(gmMoveEval)}</span>
+            )}
           </div>
         )}
 
@@ -112,6 +116,9 @@ export function FeedbackPanel({ result, gmMove, engineMoves, onNext }: FeedbackP
           <div className="feedback-move feedback-move--miss">
             <span className="badge badge--miss">You</span>
             <span className="move-san">{result.playerSan}</span>
+            {result.userMoveEval !== undefined && (
+              <span className="move-eval">{formatEval(result.userMoveEval)}</span>
+            )}
           </div>
         )}
       </div>

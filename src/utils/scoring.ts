@@ -1,4 +1,4 @@
-import type { EngineMove, MoveResult, ScoreReason } from '../types'
+import type { EngineMove, Evaluation, MoveResult, ScoreReason } from '../types'
 
 /**
  * Score a player's move against the GM move and the engine's top-3.
@@ -18,6 +18,7 @@ export function scoreMove(
   playerSan: string,
   gmUci: string,
   engineMoves: EngineMove[],
+  userMoveEval?: Evaluation,
 ): MoveResult {
   const matchedGm = playerUci === gmUci
   const engineRankEntry = engineMoves.find((m) => m.uci === playerUci)
@@ -50,5 +51,5 @@ export function scoreMove(
     reason = 'off-book'
   }
 
-  return { playerMove: playerUci, playerSan, points, reason, matchedGm, engineRank }
+  return { playerMove: playerUci, playerSan, points, reason, matchedGm, engineRank, userMoveEval }
 }

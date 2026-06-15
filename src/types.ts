@@ -63,6 +63,12 @@ export interface MoveResult {
   matchedGm: boolean
   /** The player's rank in the engine top-3 (1–3), or null if absent. */
   engineRank: number | null
+  /**
+   * Evaluation of the position after the player's move, from the player's
+   * perspective (positive = good for the player). Only set for off-book moves
+   * where the top-3 analysis does not already carry an evaluation.
+   */
+  userMoveEval?: Evaluation
 }
 
 /** Running score persisted to localStorage. */

@@ -126,7 +126,7 @@ export function useStockfish() {
     }
   }, [])
 
-  const analyze = useCallback((fen: string): Promise<EngineMove[]> => {
+  const analyze = useCallback((fen: string, moveTimeMs = MOVE_TIME_MS): Promise<EngineMove[]> => {
     return new Promise<EngineMove[]>((resolve, reject) => {
       const worker = workerRef.current
       if (!worker || !readyRef.current) {
@@ -137,7 +137,7 @@ export function useStockfish() {
       setStatus('analyzing')
       worker.postMessage('ucinewgame')
       worker.postMessage(`position fen ${fen}`)
-      worker.postMessage(`go movetime ${MOVE_TIME_MS}`)
+      worker.postMessage(`go movetime ${moveTimeMs}`)
     })
   }, [])
 
