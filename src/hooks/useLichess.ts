@@ -66,7 +66,10 @@ export function useLichess() {
         if (!pgn) continue
 
         const label = labelFromPgn(pgn)
-        const pos = pickPositionFromPgn(pgn, label)
+        const whitePlayer = pgn.match(/\[White\s+"([^"]+)"\]/)?.[1] ?? ''
+        const gmColor: 'white' | 'black' =
+          whitePlayer.toLowerCase() === player.toLowerCase() ? 'white' : 'black'
+        const pos = pickPositionFromPgn(pgn, label, gmColor)
         if (!pos) continue
 
         return { ...pos, source: 'lichess' }

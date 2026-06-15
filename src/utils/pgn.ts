@@ -12,6 +12,7 @@ import type { Position } from '../types'
 export function pickPositionFromPgn(
   pgn: string,
   label: string,
+  gmColor?: 'white' | 'black',
 ): Position | null {
   const chess = new Chess()
   try {
@@ -30,7 +31,8 @@ export function pickPositionFromPgn(
       const fields = fen.split(' ')
       const fullmove = Number(fields[5])
       const pieces = (fields[0].match(/[a-zA-Z]/g) ?? []).length
-      return fullmove >= 8 && pieces >= 14
+      const side = fields[1] === 'w' ? 'white' : 'black'
+      return fullmove >= 8 && pieces >= 14 && (gmColor === undefined || side === gmColor)
     })
 
   if (candidates.length === 0) return null
