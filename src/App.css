@@ -278,9 +278,10 @@
 
 .move-san {
   flex: 1;
-  font-family: monospace;
+  font-family: system-ui, sans-serif;
   font-size: 0.9rem;
   color: #e2e8f0;
+  line-height: 1;
 }
 
 .move-eval {

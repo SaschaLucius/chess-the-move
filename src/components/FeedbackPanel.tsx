@@ -58,10 +58,10 @@ export function buildResultArrows(
     arrows.push(uciToArrow(gmMove, "#3b82f6")); // blue
   }
 
+  // Always show the player's move arrow
   const inEngine = engineMoves.some((m) => m.uci === playerMove);
-  if (playerMove !== gmMove && !inEngine) {
-    arrows.push(uciToArrow(playerMove, "#ef4444")); // red — missed entirely
-  }
+  const playerArrowColor = (inEngine || playerMove === gmMove) ? "#60a5fa" : "#ef4444";
+  arrows.push(uciToArrow(playerMove, playerArrowColor));
 
   return arrows;
 }
