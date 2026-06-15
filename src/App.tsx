@@ -168,15 +168,13 @@ export default function App() {
       <ScoreHeader scoreState={scoreState} />
 
       <main className="main">
-        {phase === 'loading' && (
+        {phase === 'loading' && !position && (
           <div className="loading-overlay">
             <div className="spinner" />
             <p>
               {engineStatus === 'loading'
                 ? 'Loading Stockfish 18…'
-                : engineStatus === 'analyzing'
-                  ? 'Analyzing…'
-                  : 'Loading position…'}
+                : 'Loading position…'}
             </p>
           </div>
         )}
@@ -201,6 +199,13 @@ export default function App() {
                 arrows={phase === 'result' ? resultArrows : []}
               />
             </div>
+
+            {phase === 'loading' && (
+              <div className="analyzing-indicator">
+                <div className="spinner spinner--sm" />
+                <span>Analyzing…</span>
+              </div>
+            )}
           </>
         )}
 
