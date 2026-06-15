@@ -107,13 +107,15 @@ export default function App() {
 
   // Once the engine becomes ready: if we already have a position but haven't
   // started pre-analysis yet (engine was still loading when position arrived),
-  // kick it off now.
+  // kick it off now. Only fire in the 'playing' phase — during 'loading'
+  // (i.e. handleMove is in flight) this would overwrite pendingRef mid-analysis
+  // and cause the engine to get stuck in 'analyzing' forever.
   useEffect(() => {
-    if (engineStatus === 'ready' && position !== null && preAnalysisRef.current === null) {
+    if (engineStatus === 'ready' && position !== null && preAnalysisRef.current === null && phase === 'playing') {
       preAnalysisRef.current = analyze(position.fen);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [engineStatus]);
+  }, [engineStatus, phase]);
 
   async function handleMove(uci: string) {
     if (phase !== "playing" || !position) return;
