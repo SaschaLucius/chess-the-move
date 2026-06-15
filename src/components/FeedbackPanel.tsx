@@ -1,4 +1,4 @@
-import type { EngineMove, Evaluation, MoveResult, ScoreReason } from '../types'
+import type { EngineMove, Evaluation, MoveResult } from '../types'
 import type { BoardArrow } from './Board'
 
 interface FeedbackPanelProps {
@@ -15,23 +15,6 @@ function formatEval(ev: Evaluation): string {
   }
   const pawns = ev.value / 100
   return pawns >= 0 ? `+${pawns.toFixed(2)}` : pawns.toFixed(2)
-}
-
-function reasonLabel(reason: ScoreReason): string {
-  switch (reason) {
-    case 'gm-and-engine-best':
-      return "Matched the GM and engine's best!"
-    case 'gm-move':
-      return "Matched the GM's move!"
-    case 'engine-best':
-      return "Engine's top choice!"
-    case 'engine-second':
-      return "Engine's 2nd choice"
-    case 'engine-third':
-      return "Engine's 3rd choice"
-    case 'off-book':
-      return 'Not in the engine top 3'
-  }
 }
 
 function pointsClass(points: number): string {
