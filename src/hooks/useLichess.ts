@@ -33,7 +33,7 @@ export function useLichess() {
         TITLED_PLAYERS[Math.floor(Math.random() * TITLED_PLAYERS.length)]
       const url =
         `https://lichess.org/api/games/user/${encodeURIComponent(player)}` +
-        `?max=${GAMES_TO_FETCH}&perfType=${PERF_TYPES}&rated=true&opening=false`
+        `?max=${GAMES_TO_FETCH}&perfType=${PERF_TYPES}&rated=true&opening=false&pgnInJson=true`
 
       const response = await fetch(url, {
         headers: { Accept: 'application/x-ndjson' },
