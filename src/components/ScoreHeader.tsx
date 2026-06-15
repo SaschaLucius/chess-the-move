@@ -8,7 +8,7 @@ export function ScoreHeader({ scoreState }: ScoreHeaderProps) {
   const { totalPoints, movesPlayed, streak } = scoreState
   return (
     <header className="score-header">
-      <span className="score-header__title">GM Move Trainer</span>
+      <span className="score-header__title">Chess the Move</span>
       <div className="score-header__stats">
         <span className="stat">
           <span className="stat__label">Score</span>
