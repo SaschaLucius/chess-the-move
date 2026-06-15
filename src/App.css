@@ -23,12 +23,18 @@
 
 /* --- Score Header ------------------------------------------- */
 .score-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   padding: 0.6rem 1.25rem;
   background: #1e293b;
   border-bottom: 1px solid #334155;
+}
+
+.score-header__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: min(480px, calc(100vw - 2rem));
+  margin: 0 auto;
 }
 
 .score-header__title {
