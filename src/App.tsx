@@ -1,122 +1,132 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import type { EngineMove, MoveResult, Position } from './types'
+import { useStockfish } from './hooks/useStockfish'
+import { useLichess } from './hooks/useLichess'
+import { useScore } from './hooks/useScore'
+import { scoreMove } from './utils/scoring'
+import { Board } from './components/Board'
+import { FeedbackPanel, buildResultArrows } from './components/FeedbackPanel'
+import { ScoreHeader } from './components/ScoreHeader'
+import type { BoardArrow } from './components/Board'
 import './App.css'
 
-function App() {
-  const [count, setCount] = useState(0)
+type Phase = 'loading' | 'playing' | 'result'
+
+export default function App() {
+  const { status: engineStatus, analyze } = useStockfish()
+  const { fetchPosition } = useLichess()
+  const { scoreState, record } = useScore()
+
+  const [phase, setPhase] = useState<Phase>('loading')
+  const [position, setPosition] = useState<Position | null>(null)
+  const [engineMoves, setEngineMoves] = useState<EngineMove[]>([])
+  const [result, setResult] = useState<MoveResult | null>(null)
+  const [resultArrows, setResultArrows] = useState<BoardArrow[]>([])
+  const [engineError, setEngineError] = useState<string | null>(null)
+
+  // Prevent double-loading in React StrictMode or fast click.
+  const loadingRef = useRef(false)
+
+  const loadNextPosition = useCallback(async () => {
+    if (loadingRef.current) return
+    loadingRef.current = true
+    setPhase('loading')
+    setResult(null)
+    setEngineMoves([])
+    setResultArrows([])
+    setEngineError(null)
+
+    try {
+      const pos = await fetchPosition()
+      setPosition(pos)
+      setPhase('playing')
+    } finally {
+      loadingRef.current = false
+    }
+  }, [fetchPosition])
+
+  // Load the first position once the engine is ready.
+  useEffect(() => {
+    if (engineStatus === 'ready' && phase === 'loading' && position === null) {
+      void loadNextPosition()
+    }
+  }, [engineStatus, phase, position, loadNextPosition])
+
+  async function handleMove(uci: string) {
+    if (phase !== 'playing' || !position) return
+    setPhase('loading') // show spinner during engine analysis
+
+    let moves: EngineMove[] = []
+    try {
+      moves = await analyze(position.fen)
+      setEngineMoves(moves)
+    } catch (err) {
+      setEngineError(String(err))
+    }
+
+    // Use UCI as the displayed SAN fallback. The FeedbackPanel shows UCI squares.
+    const moveResult = scoreMove(uci, uci, position.gmMove, moves)
+    record(moveResult.points)
+    setResult(moveResult)
+    setResultArrows(buildResultArrows(position.gmMove, moves, uci))
+    setPhase('result')
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <div className="app">
+      <ScoreHeader scoreState={scoreState} />
 
-      <div className="ticks"></div>
+      <main className="main">
+        {phase === 'loading' && (
+          <div className="loading-overlay">
+            <div className="spinner" />
+            <p>
+              {engineStatus === 'loading'
+                ? 'Loading Stockfish 18…'
+                : engineStatus === 'analyzing'
+                  ? 'Analyzing…'
+                  : 'Loading position…'}
+            </p>
+          </div>
+        )}
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+        {position && (
+          <>
+            <div className="position-label">
+              <span className={`source-badge source-badge--${position.source}`}>
+                {position.source === 'lichess' ? 'Lichess live' : 'Classic'}
+              </span>
+              <span className="game-label">{position.label}</span>
+              <span className="side-to-move">
+                {position.sideToMove === 'white' ? '⬜' : '⬛'} to move
+              </span>
+            </div>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+            <div className="board-wrapper">
+              <Board
+                position={position}
+                onMove={(uci) => void handleMove(uci)}
+                interactive={phase === 'playing'}
+                arrows={phase === 'result' ? resultArrows : []}
+              />
+            </div>
+          </>
+        )}
+
+        {phase === 'result' && result && position && (
+          <>
+            {engineError && (
+              <p className="engine-error">Engine error: {engineError}</p>
+            )}
+            <FeedbackPanel
+              result={result}
+              gmMove={position.gmMove}
+              engineMoves={engineMoves}
+              onNext={() => void loadNextPosition()}
+            />
+          </>
+        )}
+      </main>
+    </div>
   )
 }
-
-export default App
