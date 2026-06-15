@@ -1,14 +1,14 @@
-import type { ScoreState } from '../types'
+import type { ScoreState } from "../types";
 
 interface ScoreHeaderProps {
-  scoreState: ScoreState
+  scoreState: ScoreState;
 }
 
 export function ScoreHeader({ scoreState }: ScoreHeaderProps) {
-  const { totalPoints, movesPlayed, streak } = scoreState
+  const { totalPoints, movesPlayed, streak } = scoreState;
   return (
     <header className="score-header">
-      <span className="score-header__title">Chess the Move</span>
+      <span className="score-header__title">Chess the next Move</span>
       <div className="score-header__stats">
         <span className="stat">
           <span className="stat__label">Score</span>
@@ -26,5 +26,5 @@ export function ScoreHeader({ scoreState }: ScoreHeaderProps) {
         )}
       </div>
     </header>
-  )
+  );
 }
