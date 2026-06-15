@@ -77,6 +77,8 @@ export function buildResultArrows(
 }
 
 export function FeedbackPanel({ result, gmMove, engineMoves, onNext }: FeedbackPanelProps) {
+  const gmInTop3 = engineMoves.some((em) => em.uci === gmMove)
+
   return (
     <div className="feedback-panel">
       <div className={pointsClass(result.points)}>
@@ -85,19 +87,22 @@ export function FeedbackPanel({ result, gmMove, engineMoves, onNext }: FeedbackP
       <p className="feedback-reason">{reasonLabel(result.reason)}</p>
 
       <div className="feedback-moves">
-        <div className="feedback-move feedback-move--gm">
-          <span className="badge badge--gm">GM</span>
-          <span className="move-san">{gmMove.slice(0, 2)}→{gmMove.slice(2, 4)}</span>
-        </div>
+        {!gmInTop3 && (
+          <div className="feedback-move feedback-move--gm">
+            <span className="badge badge--gm">GM</span>
+            <span className="move-san">{gmMove.slice(0, 2)}→{gmMove.slice(2, 4)}</span>
+          </div>
+        )}
 
         {engineMoves.map((em) => (
           <div
             key={em.rank}
             className={`feedback-move feedback-move--engine${em.rank}${
               em.uci === result.playerMove ? ' feedback-move--player' : ''
-            }`}
+            }${em.uci === gmMove ? ' feedback-move--gm-merged' : ''}`}
           >
             <span className="badge badge--engine">#{em.rank}</span>
+            {em.uci === gmMove && <span className="badge badge--gm">GM</span>}
             <span className="move-san">{em.uci.slice(0, 2)}→{em.uci.slice(2, 4)}</span>
             <span className="move-eval">{formatEval(em.evaluation)}</span>
           </div>
