@@ -3,13 +3,14 @@ import type { EngineMove, Evaluation, MoveResult, ScoreReason } from '../types'
 /**
  * Score a player's move against the GM move and the engine's top-3.
  *
- * Rules (from the plan):
- *  - Player matched GM move AND engine's #1 → 3 pts, reason 'gm-and-engine-best'
- *  - Player matched GM move only               → 3 pts, reason 'gm-move'
- *  - Player matched engine #1 (not GM)         → 3 pts, reason 'engine-best'
- *  - Player matched engine #2                  → 2 pts, reason 'engine-second'
- *  - Player matched engine #3                  → 1 pt,  reason 'engine-third'
- *  - None of the above                         → 0 pts, reason 'off-book'
+ * Rules:
+ *  - Engine #1 (regardless of GM)  → 3 pts
+ *  - Engine #2 + GM match          → 3 pts
+ *  - Engine #2 only                → 2 pts
+ *  - Engine #3 + GM match          → 2 pts
+ *  - Engine #3 only                → 1 pt
+ *  - GM only (not in top 3)        → 1 pt
+ *  - Off-book                      → −1 pt
  *
  * All moves are compared in UCI/long-algebraic form (e.g. "e2e4", "e7e8q").
  */
@@ -24,30 +25,29 @@ export function scoreMove(
   const engineRankEntry = engineMoves.find((m) => m.uci === playerUci)
   const engineRank = engineRankEntry?.rank ?? null
 
-  const isEngineBest = engineRank === 1
-  const matchedEngine2 = engineRank === 2
-  const matchedEngine3 = engineRank === 3
-
   let points: number
   let reason: ScoreReason
 
-  if (matchedGm && isEngineBest) {
-    points = 3
-    reason = 'gm-and-engine-best'
-  } else if (matchedGm) {
-    points = 3
-    reason = 'gm-move'
-  } else if (isEngineBest) {
+  if (engineRank === 1) {
     points = 3
     reason = 'engine-best'
-  } else if (matchedEngine2) {
+  } else if (engineRank === 2 && matchedGm) {
+    points = 3
+    reason = 'gm-and-engine-second'
+  } else if (engineRank === 2) {
     points = 2
     reason = 'engine-second'
-  } else if (matchedEngine3) {
+  } else if (engineRank === 3 && matchedGm) {
+    points = 2
+    reason = 'gm-and-engine-third'
+  } else if (engineRank === 3) {
     points = 1
     reason = 'engine-third'
+  } else if (matchedGm) {
+    points = 1
+    reason = 'gm-move'
   } else {
-    points = 0
+    points = -1
     reason = 'off-book'
   }
 

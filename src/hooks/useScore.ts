@@ -36,10 +36,9 @@ export function useScore() {
 
     // Streak bonus: +1 at streak 3–5, +2 at streak 6+
     const streakBonus = streak >= 6 ? 2 : streak >= 3 ? 1 : 0;
-    // Penalty for off-book moves: –1 pt (totalPoints is floored at 0)
-    const penalty = isScoring ? 0 : 1;
+    // Off-book penalty is already encoded as −1 in scoreMove
 
-    const delta = points + streakBonus - penalty;
+    const delta = points + streakBonus;
     const next: ScoreState = {
       totalPoints: Math.max(0, prev.totalPoints + delta),
       movesPlayed: prev.movesPlayed + 1,

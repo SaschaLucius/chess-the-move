@@ -42,12 +42,13 @@ export interface Position {
 
 /** Why a given number of points was awarded. */
 export type ScoreReason =
-  | 'gm-and-engine-best'
-  | 'gm-move'
-  | 'engine-best'
-  | 'engine-second'
-  | 'engine-third'
-  | 'off-book'
+  | 'engine-best'           // engine #1 (always 3 pts)
+  | 'gm-and-engine-second'  // engine #2 + GM match → 3 pts
+  | 'engine-second'         // engine #2, no GM match → 2 pts
+  | 'gm-and-engine-third'   // engine #3 + GM match → 2 pts
+  | 'engine-third'          // engine #3, no GM match → 1 pt
+  | 'gm-move'               // GM match, not in top 3 → 1 pt
+  | 'off-book'              // none of the above → −1 pt
 
 /** Outcome of scoring a player's guess against the GM and the engine. */
 export interface MoveResult {
@@ -55,7 +56,7 @@ export interface MoveResult {
   playerMove: string
   /** The player's move in SAN, for display. */
   playerSan: string
-  /** Points awarded, 0–3. */
+  /** Points awarded: −1, 1, 2, or 3. */
   points: number
   /** Explanation for the awarded points. */
   reason: ScoreReason
