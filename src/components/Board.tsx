@@ -103,6 +103,15 @@ export function Board({
     setLegalTargets([])
   }
 
+  function handleSquareMouseDown({ piece, square }: SquareHandlerArgs) {
+    if (!interactive) return
+    if (piece && isCurrentPlayerPiece(piece.pieceType)) {
+      const targets = getLegalTargets(square)
+      setSelectedSquare(square)
+      setLegalTargets(targets)
+    }
+  }
+
   function handlePieceDrag({ square }: PieceHandlerArgs) {
     if (!interactive || !square) return
     const targets = getLegalTargets(square)
@@ -154,6 +163,7 @@ export function Board({
         onPieceDrop: handleDrop,
         onPieceDrag: handlePieceDrag,
         onSquareClick: handleSquareClick,
+        onSquareMouseDown: handleSquareMouseDown,
         allowDragging: interactive,
         canDragPiece: ({ piece }: PieceHandlerArgs) =>
           interactive && isCurrentPlayerPiece(piece.pieceType),
