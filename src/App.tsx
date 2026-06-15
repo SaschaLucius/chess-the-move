@@ -32,11 +32,20 @@ export default function App() {
   // Holds the pre-calculated analysis promise started as soon as a position
   // loads, so the engine has already been thinking while the user considers.
   const preAnalysisRef = useRef<Promise<EngineMove[]> | null>(null)
+  // Prefetched next position (started during the result phase so the user
+  // never waits for the network when they click "Next").
+  const prefetchRef = useRef<Promise<Position | null> | null>(null)
+  // Synchronously readable result of the prefetch:
+  //   undefined = no prefetch started / still in flight
+  //   null      = prefetch failed
+  //   Position  = prefetch succeeded
+  const prefetchResultRef = useRef<Position | null | undefined>(undefined)
 
   const loadNextPosition = useCallback(async () => {
     if (loadingRef.current) return
     loadingRef.current = true
-    setPhase('loading')
+
+    // Always reset game state.
     setResult(null)
     setEngineMoves([])
     setResultArrows([])
@@ -44,11 +53,30 @@ export default function App() {
     setGmMoveEval(undefined)
 
     try {
-      const pos = await fetchPosition()
+      let pos: Position | null = null
+
+      if (prefetchResultRef.current !== undefined) {
+        // Prefetch already resolved — consume it and go straight to playing.
+        pos = prefetchResultRef.current
+        prefetchRef.current = null
+        prefetchResultRef.current = undefined
+      } else if (prefetchRef.current) {
+        // Prefetch still in flight — show loading and wait for it.
+        setPhase('loading')
+        pos = await prefetchRef.current
+        prefetchRef.current = null
+        prefetchResultRef.current = undefined
+      }
+
+      if (!pos) {
+        // No prefetch or it failed — fetch now with loading indicator.
+        setPhase('loading')
+        pos = await fetchPosition()
+        preAnalysisRef.current = analyze(pos.fen)
+      }
+
       setPosition(pos)
       setPhase('playing')
-      // Start engine analysis immediately while the user is reading the position.
-      preAnalysisRef.current = analyze(pos.fen)
     } finally {
       loadingRef.current = false
     }
@@ -118,6 +146,21 @@ export default function App() {
     setResult(moveResult)
     setResultArrows(buildResultArrows(position.gmMove, moves, uci))
     setPhase('result')
+
+    // Start fetching the next position in the background while the user
+    // reviews their result. Once the position arrives, kick off engine
+    // analysis so both are ready when the user clicks "Next".
+    prefetchResultRef.current = undefined
+    prefetchRef.current = fetchPosition()
+      .then((pos) => {
+        preAnalysisRef.current = analyze(pos.fen)
+        prefetchResultRef.current = pos
+        return pos
+      })
+      .catch(() => {
+        prefetchResultRef.current = null
+        return null
+      })
   }
 
   return (
