@@ -186,9 +186,6 @@ export default function App() {
                 {position.source === 'lichess' ? 'Lichess live' : 'Classic'}
               </span>
               <span className="game-label">{position.label}</span>
-              <span className="side-to-move">
-                {position.sideToMove === 'white' ? '⬜' : '⬛'} to move
-              </span>
             </div>
 
             <div className="board-wrapper">
@@ -198,6 +195,11 @@ export default function App() {
                 interactive={phase === 'playing'}
                 arrows={phase === 'result' ? resultArrows : []}
               />
+            </div>
+
+            <div className="side-to-move">
+              <span className={`side-to-move__dot side-to-move__dot--${position.sideToMove}`} />
+              {position.sideToMove === 'white' ? 'White' : 'Black'} to move
             </div>
 
             {phase === 'loading' && (
