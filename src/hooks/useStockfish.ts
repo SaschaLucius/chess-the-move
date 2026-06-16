@@ -12,6 +12,7 @@ export type EngineStatus = 'loading' | 'ready' | 'analyzing'
 
 interface PendingAnalysis {
   resolve: (moves: EngineMove[]) => void
+  reject: (reason: Error) => void
   /** Latest candidate per MultiPV rank, keyed by rank (1..MULTI_PV). */
   lines: Map<number, EngineMove>
 }
@@ -124,9 +125,11 @@ export function useStockfish() {
       cancelled = true
       readyRef.current = false
       waitersRef.current = []
-      // Reject nothing here: the app only analyzes in response to user actions,
-      // so no analysis is in flight across mount/unmount in normal use.
-      pendingRef.current = null
+      // Reject any in-flight analysis so its awaiter doesn't hang.
+      if (pendingRef.current) {
+        pendingRef.current.reject(new Error('Engine terminated'))
+        pendingRef.current = null
+      }
       worker.terminate()
       workerRef.current = null
     }
@@ -139,7 +142,13 @@ export function useStockfish() {
         reject(new Error('Engine is not ready yet'))
         return
       }
-      pendingRef.current = { resolve, lines: new Map() }
+      // Abort any currently-running search before starting a new one.
+      if (pendingRef.current) {
+        worker.postMessage('stop')
+        pendingRef.current.reject(new Error('Analysis superseded'))
+        pendingRef.current = null
+      }
+      pendingRef.current = { resolve, reject, lines: new Map() }
       setStatus('analyzing')
       worker.postMessage('ucinewgame')
       worker.postMessage(`position fen ${fen}`)
