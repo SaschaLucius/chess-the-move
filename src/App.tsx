@@ -144,14 +144,25 @@ export default function App() {
       preAnalysisRef.current = analyze(position.fen);
     }
 
-    let moves: EngineMove[] = [];
+    let moves: EngineMove[];
     try {
       // Await the analysis that started while the user was thinking.
       moves = await preAnalysisRef.current;
       preAnalysisRef.current = null;
       setEngineMoves(moves);
     } catch (err) {
-      setEngineError(String(err));
+      // Engine analysis failed. Score using GM-move comparison only (no engine
+      // ranking or follow-up eval calls, which would also fail).
+      const errMsg = String(err);
+      setEngineError(errMsg);
+      preAnalysisRef.current = null;
+      const moveResult = scoreMove(uci, uci, position.gmMove, [], undefined, undefined);
+      const delta = record(moveResult.points);
+      setLastDelta(delta);
+      setResult(moveResult);
+      setResultArrows(buildResultArrows(position.gmMove, [], uci));
+      setPhase("result");
+      return;
     }
 
     // Helpers to analyze a position after a single UCI move and return the
