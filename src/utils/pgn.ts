@@ -56,7 +56,10 @@ export function pickPositionFromPgn(
 
   return {
     fen: pick.fen,
-    gmMove: pick.move.lan,
+    // Normalise to 4-char UCI so underpromotions (e7e8r) compare equal to any
+    // pawn push to the same square — the scoring only cares about the move,
+    // not which piece is chosen.
+    gmMove: pick.move.lan.slice(0, 4),
     gmSan: pick.move.san,
     orientation: sideToMove,
     sideToMove,

@@ -47,7 +47,9 @@ function parseInfoLine(line: string): EngineMove | null {
   }
 
   if (!rank || !uci || !evaluation) return null
-  return { uci, rank, evaluation }
+  // Normalise to 4-char UCI so promotion moves (e7e8q) compare equal to the
+  // 4-char UCIs emitted by Board and stored in position.gmMove.
+  return { uci: uci.slice(0, 4), rank, evaluation }
 }
 
 /**

@@ -151,7 +151,8 @@ export default function App() {
         chess.move({
           from: move.slice(0, 2) as Square,
           to: move.slice(2, 4) as Square,
-          promotion: move[4],
+          // move is normalised to 4 chars; default to queen for evaluation purposes.
+          promotion: (move[4] as 'q' | 'r' | 'b' | 'n' | undefined) ?? 'q',
         });
         const followUp = await analyze(chess.fen(), 500);
         if (!followUp[0]) return undefined;

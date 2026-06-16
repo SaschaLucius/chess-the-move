@@ -64,15 +64,12 @@ export function Board({
   }
 
   function commitMove(from: string, to: string) {
-    const chess = new Chess(position.fen)
-    const piece = chess.get(from as Square)
-    const isPromotion =
-      piece?.type === 'p' &&
-      ((position.sideToMove === 'white' && to[1] === '8') ||
-        (position.sideToMove === 'black' && to[1] === '1'))
     setSelectedSquare(null)
     setLegalTargets([])
-    onMove(isPromotion ? `${from}${to}q` : `${from}${to}`)
+    // Emit a plain 4-char UCI. Promotion piece is intentionally omitted so
+    // that any promotion to any square matches the GM move regardless of which
+    // piece was chosen (the scoring only cares about the destination square).
+    onMove(`${from}${to}`)
   }
 
   function handleSquareClick({ piece, square }: SquareHandlerArgs) {
@@ -128,12 +125,8 @@ export function Board({
       return false
     }
 
-    // pieceType is 'wP' / 'bP' — index 1 is the piece letter
-    const isPromotion =
-      piece.pieceType[1] === 'P' &&
-      ((position.sideToMove === 'white' && targetSquare[1] === '8') ||
-        (position.sideToMove === 'black' && targetSquare[1] === '1'))
-    onMove(isPromotion ? `${sourceSquare}${targetSquare}q` : `${sourceSquare}${targetSquare}`)
+    // Emit a plain 4-char UCI. Promotion piece is intentionally omitted (see commitMove).
+    onMove(`${sourceSquare}${targetSquare}`)
     return true
   }
 
