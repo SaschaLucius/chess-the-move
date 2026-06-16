@@ -1,4 +1,4 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, useState } from "react";
 import type { ScoreState } from "../types";
 
 const STORAGE_KEY = "ctm-score-v1";
@@ -23,11 +23,14 @@ function saveState(state: ScoreState): void {
 
 /**
  * Manages the running score in localStorage.
- * Uses a ref so increments never trigger re-renders in App.
- * A forced re-render happens only when `record()` is called (once per move).
+ *
+ * `scoreState` is real React state so the UI re-renders whenever the score
+ * changes. A ref mirror keeps the latest value readable synchronously inside
+ * `record()` so consecutive calls compute the correct streak/delta.
  */
 export function useScore() {
-  const stateRef = useRef<ScoreState>(loadState());
+  const [scoreState, setScoreState] = useState<ScoreState>(loadState);
+  const stateRef = useRef<ScoreState>(scoreState);
 
   const record = useCallback((points: number): number => {
     const prev = stateRef.current;
@@ -46,6 +49,7 @@ export function useScore() {
       bestStreak: Math.max(prev.bestStreak, streak),
     };
     stateRef.current = next;
+    setScoreState(next);
     saveState(next);
     return delta;
   }, []);
@@ -58,8 +62,9 @@ export function useScore() {
       bestStreak: 0,
     };
     stateRef.current = fresh;
+    setScoreState(fresh);
     saveState(fresh);
   }, []);
 
-  return { scoreState: stateRef.current, record, reset };
+  return { scoreState, record, reset };
 }

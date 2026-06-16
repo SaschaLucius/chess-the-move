@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Chess } from 'chess.js'
 import type { Square } from 'chess.js'
 import { Chessboard } from 'react-chessboard'
@@ -42,12 +42,6 @@ export function Board({
 }: BoardProps) {
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null)
   const [legalTargets, setLegalTargets] = useState<string[]>([])
-
-  // Clear selection whenever the position (or interactive state) changes.
-  useEffect(() => {
-    setSelectedSquare(null)
-    setLegalTargets([])
-  }, [position.fen, interactive])
 
   const rcbArrows: Arrow[] = arrows.map((a) => ({
     startSquare: a.from,

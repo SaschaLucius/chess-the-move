@@ -7,7 +7,8 @@ import { useLichess } from "./hooks/useLichess";
 import { useScore } from "./hooks/useScore";
 import { scoreMove } from "./utils/scoring";
 import { Board } from "./components/Board";
-import { FeedbackPanel, buildResultArrows } from "./components/FeedbackPanel";
+import { FeedbackPanel } from "./components/FeedbackPanel";
+import { buildResultArrows } from "./utils/arrows";
 import { ScoreHeader } from "./components/ScoreHeader";
 import type { BoardArrow } from "./components/Board";
 import "./App.css";
@@ -97,7 +98,7 @@ export default function App() {
     } finally {
       loadingRef.current = false;
     }
-  }, [fetchPosition]);
+  }, [fetchPosition, analyze]);
 
   // Load the first position immediately on mount (engine loads in parallel).
   useEffect(() => {
@@ -238,6 +239,7 @@ export default function App() {
 
             <div className="board-wrapper">
               <Board
+                key={position.fen}
                 position={position}
                 onMove={(uci) => void handleMove(uci)}
                 interactive={phase === "playing"}

@@ -38,8 +38,8 @@ export function pickPositionFromPgn(
   // at a middlegame depth, and with enough material on the board.
   const candidates = fullHistory
     .slice(0, -1) // exclude final move so the GM move is always full history[i+1]
-    .map((m, i) => ({ move: fullHistory[i + 1], fen: m.after, index: i + 1 }))
-    .filter(({ fen, index: _index }) => {
+    .map((m, i) => ({ move: fullHistory[i + 1], fen: m.after }))
+    .filter(({ fen }) => {
       const fields = fen.split(' ')
       const fullmove = Number(fields[5])
       const board = fields[0]
