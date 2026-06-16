@@ -110,7 +110,7 @@ export function Board({
     setLegalTargets(targets)
   }
 
-  function handleDrop({ sourceSquare, targetSquare, piece }: PieceDropHandlerArgs) {
+  function handleDrop({ sourceSquare, targetSquare }: PieceDropHandlerArgs) {
     // Always clear highlights when a drop is attempted (valid or not).
     setSelectedSquare(null)
     setLegalTargets([])
