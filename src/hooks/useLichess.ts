@@ -20,6 +20,16 @@ const TITLED_PLAYERS = [
 const PERF_TYPES = 'blitz,rapid'
 const GAMES_TO_FETCH = 20
 
+/** Fisher-Yates shuffle — uniform, O(n). */
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
 /**
  * Fetch up to GAMES_TO_FETCH recent blitz/rapid games from a random titled
  * Lichess user, pick a random game, and extract a middlegame position via the
@@ -53,7 +63,7 @@ export function useLichess() {
       if (lines.length === 0) throw new Error('empty response')
 
       // Shuffle so we do not always pick game #0.
-      const shuffled = [...lines].sort(() => Math.random() - 0.5)
+      const shuffled = shuffle(lines)
 
       for (const line of shuffled) {
         let game: { pgn?: string } | null = null
@@ -87,7 +97,7 @@ export function useLichess() {
 
 /** Pick a random position from the curated game list (always succeeds). */
 export function pickFromCurated(): Position {
-  const shuffled = [...curatedGames].sort(() => Math.random() - 0.5)
+  const shuffled = shuffle(curatedGames)
   for (const game of shuffled) {
     const label = labelFromPgn(game.pgn)
     const pos = pickPositionFromPgn(game.pgn, label)
