@@ -1,11 +1,47 @@
-# React + TypeScript + Vite
+# Chess the Move
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A progressive web app that trains your chess intuition by challenging you to guess the next move played in famous and live grandmaster games. Powered by Stockfish 18 for move evaluation.
 
-Currently, two official plugins are available:
+## How it works
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+1. A middlegame position from a real game is displayed.
+2. Make your move — drag or click to move a piece.
+3. Stockfish evaluates your move against the GM's choice and its own top-3 candidates.
+4. Points are awarded based on move quality, with streak bonuses for consecutive good moves.
+
+## Scoring
+
+| Move | Points |
+|------|--------|
+| Engine #1 | +3 |
+| Engine #2 + GM match | +3 |
+| Engine #2 only | +2 |
+| Engine #3 + GM match | +2 |
+| Engine #3 only | +1 |
+| GM move (not top-3) | +1 |
+| Off-book but better than GM eval | +1 |
+| Off-book | −1 |
+
+Streak bonuses: +1 at 3–5 consecutive scoring moves, +2 at 6+.
+
+## Development
+
+```bash
+npm install
+npm run dev        # dev server at http://localhost:5173
+npm run build      # production build (tsc + vite)
+npm run test       # vitest unit tests
+npm run lint       # eslint
+```
+
+## Tech stack
+
+- React 19 + TypeScript, built with Vite
+- [chess.js](https://github.com/jhlywa/chess.js) for move validation and SAN conversion
+- [react-chessboard](https://github.com/Clariity/react-chessboard) for the board UI
+- [Stockfish 18 lite](https://github.com/official-stockfish/Stockfish) (single-threaded WASM) in a Web Worker
+- Live positions from the [Lichess API](https://lichess.org/api)
+- PWA via vite-plugin-pwa
 
 ## React Compiler
 

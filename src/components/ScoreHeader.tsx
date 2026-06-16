@@ -9,7 +9,7 @@ export function ScoreHeader({ scoreState }: ScoreHeaderProps) {
   return (
     <header className="score-header">
       <div className="score-header__inner">
-      <span className="score-header__title">Chess the next Move</span>
+      <span className="score-header__title">Chess the Move</span>
       <div className="score-header__stats">
         <span className="stat">
           <span className="stat__label">Score</span>

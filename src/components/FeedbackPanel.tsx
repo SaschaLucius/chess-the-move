@@ -1,12 +1,31 @@
+import { Chess } from "chess.js";
+import type { Square } from "chess.js";
 import type { EngineMove, Evaluation, MoveResult } from "../types";
 
 interface FeedbackPanelProps {
   result: MoveResult;
+  fen: string;
   gmMove: string;
+  gmSan: string;
   gmMoveEval?: Evaluation;
   engineMoves: EngineMove[];
   pointsDelta: number;
   onNext: () => void;
+}
+
+/** Convert a UCI move to SAN given the position FEN. Falls back to "a1→b2" on error. */
+function uciToSan(fen: string, uci: string): string {
+  try {
+    const chess = new Chess(fen);
+    const result = chess.move({
+      from: uci.slice(0, 2) as Square,
+      to: uci.slice(2, 4) as Square,
+      promotion: (uci[4] as "q" | "r" | "b" | "n" | undefined) ?? "q",
+    });
+    return result.san;
+  } catch {
+    return `${uci.slice(0, 2)}→${uci.slice(2, 4)}`;
+  }
 }
 
 function formatEval(ev: Evaluation): string {
@@ -39,7 +58,9 @@ type ListItem =
 
 export function FeedbackPanel({
   result,
+  fen,
   gmMove,
+  gmSan,
   gmMoveEval,
   engineMoves,
   pointsDelta,
@@ -97,7 +118,7 @@ export function FeedbackPanel({
                 <span className="badge badge--you">YOU</span>
               )}
               <span className="move-san">
-                {gmMove.slice(0, 2)}→{gmMove.slice(2, 4)}
+                {gmSan}
               </span>
               {gmMoveEval !== undefined && (
                 <span className="move-eval">{formatEval(gmMoveEval)}</span>
@@ -109,7 +130,7 @@ export function FeedbackPanel({
               className="feedback-move feedback-move--miss"
             >
               <span className="badge badge--miss">You</span>
-              <span className="move-san">{result.playerMove.slice(0, 2)}→{result.playerMove.slice(2, 4)}</span>
+              <span className="move-san">{result.playerSan}</span>
               {result.userMoveEval !== undefined && (
                 <span className="move-eval">
                   {formatEval(result.userMoveEval)}
@@ -129,7 +150,7 @@ export function FeedbackPanel({
                 <span className="badge badge--you">YOU</span>
               )}
               <span className="move-san">
-                {item.move.uci.slice(0, 2)}→{item.move.uci.slice(2, 4)}
+                {uciToSan(fen, item.move.uci)}
               </span>
               <span className="move-eval">{formatEval(item.move.evaluation)}</span>
             </div>

@@ -122,6 +122,19 @@ export default function App() {
     if (phase !== "playing" || !position) return;
     setPhase("loading");
 
+    // Compute SAN from the FEN before awaiting anything (position is known here).
+    const chessSan = new Chess(position.fen);
+    let playerSanEarly: string;
+    try {
+      playerSanEarly = chessSan.move({
+        from: uci.slice(0, 2) as Square,
+        to: uci.slice(2, 4) as Square,
+        promotion: (uci[4] as 'q' | 'r' | 'b' | 'n' | undefined) ?? 'q',
+      }).san;
+    } catch {
+      playerSanEarly = `${uci.slice(0, 2)}→${uci.slice(2, 4)}`;
+    }
+
     // If the engine was still loading when this position arrived, pre-analysis
     // hasn't started yet. Wait for the engine, then start (or reuse) it.
     // waitForReady() rejects if the engine failed — catch it so the game can
@@ -131,7 +144,7 @@ export default function App() {
     } catch (err) {
       setEngineError(String(err));
       // Score without engine data: the move will be judged vs. the GM move only.
-      const moveResult = scoreMove(uci, uci, position.gmMove, [], undefined, undefined);
+      const moveResult = scoreMove(uci, playerSanEarly, position.gmMove, [], undefined, undefined);
       const delta = record(moveResult.points);
       setLastDelta(delta);
       setResult(moveResult);
@@ -156,7 +169,7 @@ export default function App() {
       const errMsg = String(err);
       setEngineError(errMsg);
       preAnalysisRef.current = null;
-      const moveResult = scoreMove(uci, uci, position.gmMove, [], undefined, undefined);
+      const moveResult = scoreMove(uci, playerSanEarly, position.gmMove, [], undefined, undefined);
       const delta = record(moveResult.points);
       setLastDelta(delta);
       setResult(moveResult);
@@ -212,10 +225,9 @@ export default function App() {
     }
     setGmMoveEval(gmEval);
 
-    // Use UCI as the displayed SAN fallback. The FeedbackPanel shows UCI squares.
     const moveResult = scoreMove(
       uci,
-      uci,
+      playerSanEarly,
       position.gmMove,
       moves,
       userMoveEval,
@@ -303,7 +315,9 @@ export default function App() {
             )}
             <FeedbackPanel
               result={result}
+              fen={position.fen}
               gmMove={position.gmMove}
+              gmSan={position.gmSan}
               gmMoveEval={gmMoveEval}
               engineMoves={engineMoves}
               pointsDelta={lastDelta}
