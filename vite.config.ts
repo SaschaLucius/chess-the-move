@@ -15,8 +15,8 @@ export default defineConfig({
         globIgnores: ['**/engine/**'],
       },
       manifest: {
-        name: 'Chess — Next the Move',
-        short_name: 'Chess Move',
+        name: 'Chess the Move',
+        short_name: 'Chess the Move',
         description: 'Guess the next move in famous chess games and score points.',
         theme_color: '#2d1a0e',
         background_color: '#1a0e07',
@@ -40,4 +40,7 @@ export default defineConfig({
       },
     }),
   ],
+  test: {
+    environment: 'node',
+  },
 })
