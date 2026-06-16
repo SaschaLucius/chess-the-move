@@ -66,5 +66,17 @@ export function useScore() {
     saveState(fresh);
   }, []);
 
-  return { scoreState, record, reset };
+  /** Deduct `cost` from totalPoints (min 0) without affecting streak or movesPlayed. */
+  const deductPoints = useCallback((cost: number) => {
+    const prev = stateRef.current;
+    const next: ScoreState = {
+      ...prev,
+      totalPoints: Math.max(0, prev.totalPoints - cost),
+    };
+    stateRef.current = next;
+    setScoreState(next);
+    saveState(next);
+  }, []);
+
+  return { scoreState, record, reset, deductPoints };
 }

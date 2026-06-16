@@ -59,8 +59,8 @@ describe("scoreMove — off-engine cases", () => {
       "Nc3",
       "c2c4",
       top3,
-      { type: "cp", value: 50 },  // player eval
-      { type: "cp", value: 10 },  // GM eval
+      { type: "cp", value: 50 }, // player eval
+      { type: "cp", value: 10 }, // GM eval
     );
     expect(r.points).toBe(1);
     expect(r.reason).toBe("beat-gm");
@@ -105,8 +105,8 @@ describe("scoreMove — edge cases", () => {
       "Nc3",
       "a2a3",
       top3,
-      { type: "mate", value: 5 },   // player finds mate
-      { type: "cp", value: 30 },    // GM played modest move
+      { type: "mate", value: 5 }, // player finds mate
+      { type: "cp", value: 30 }, // GM played modest move
     );
     expect(r.points).toBe(1);
     expect(r.reason).toBe("beat-gm");

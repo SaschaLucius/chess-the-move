@@ -5,9 +5,11 @@ import type { EngineMove, Evaluation, MoveResult, Position } from "./types";
 import { useStockfish } from "./hooks/useStockfish";
 import { useLichess } from "./hooks/useLichess";
 import { useScore } from "./hooks/useScore";
+import { useSettings } from "./hooks/useSettings";
 import { scoreMove } from "./utils/scoring";
 import { Board } from "./components/Board";
 import { FeedbackPanel } from "./components/FeedbackPanel";
+import { SettingsModal } from "./components/SettingsModal";
 import { buildResultArrows } from "./utils/arrows";
 import { ScoreHeader } from "./components/ScoreHeader";
 import type { BoardArrow } from "./components/Board";
@@ -18,11 +20,15 @@ type Phase = "loading" | "playing" | "result";
 export default function App() {
   const { status: engineStatus, analyze, waitForReady } = useStockfish();
   const { fetchPosition } = useLichess();
-  const { scoreState, record } = useScore();
+  const { scoreState, record, reset, deductPoints } = useScore();
+  const { settings, updateSettings } = useSettings();
 
   const [phase, setPhase] = useState<Phase>("loading");
   const [position, setPosition] = useState<Position | null>(null);
   const [engineMoves, setEngineMoves] = useState<EngineMove[]>([]);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [hintUsed, setHintUsed] = useState(false);
+  const [blitzTimeLeft, setBlitzTimeLeft] = useState<number | null>(null);
   const [result, setResult] = useState<MoveResult | null>(null);
   const [lastDelta, setLastDelta] = useState<number>(0);
   const [resultArrows, setResultArrows] = useState<BoardArrow[]>([]);
@@ -35,7 +41,14 @@ export default function App() {
   const loadingRef = useRef(false);
   // Keep a ref-copy of engineStatus so callbacks can read it without stale closures.
   const engineStatusRef = useRef(engineStatus);
-  useEffect(() => { engineStatusRef.current = engineStatus; }, [engineStatus]);
+  useEffect(() => {
+    engineStatusRef.current = engineStatus;
+  }, [engineStatus]);
+  // Keep a ref-copy of settings so analyze calls always use the current moveTimeMs.
+  const settingsRef = useRef(settings);
+  useEffect(() => {
+    settingsRef.current = settings;
+  }, [settings]);
   // Holds the pre-calculated analysis promise started as soon as a position
   // loads, so the engine has already been thinking while the user considers.
   const preAnalysisRef = useRef<Promise<EngineMove[]> | null>(null);
@@ -58,6 +71,8 @@ export default function App() {
     setResultArrows([]);
     setEngineError(null);
     setGmMoveEval(undefined);
+    setHintUsed(false);
+    setBlitzTimeLeft(null);
 
     try {
       let pos: Position | null = null;
@@ -77,7 +92,7 @@ export default function App() {
 
       // If the prefetch fell back to curated, discard it and try Lichess fresh
       // so we recover as soon as the API comes back up.
-      if (pos?.source === 'curated') {
+      if (pos?.source === "curated") {
         preAnalysisRef.current = null;
         pos = null;
       }
@@ -88,13 +103,17 @@ export default function App() {
         pos = await fetchPosition();
         // Start pre-analysis only if engine is already ready; otherwise the
         // engineStatus effect below will kick it off once the engine is ready.
-        if (engineStatusRef.current === 'ready') {
-          preAnalysisRef.current = analyze(pos.fen);
+        if (engineStatusRef.current === "ready") {
+          preAnalysisRef.current = analyze(pos.fen, settingsRef.current.moveTimeMs);
         }
       }
 
       setPosition(pos);
       setPhase("playing");
+      // Start blitz countdown if enabled.
+      if (settingsRef.current.blitzEnabled) {
+        setBlitzTimeLeft(settingsRef.current.blitzSeconds);
+      }
     } finally {
       loadingRef.current = false;
     }
@@ -112,14 +131,46 @@ export default function App() {
   // (i.e. handleMove is in flight) this would overwrite pendingRef mid-analysis
   // and cause the engine to get stuck in 'analyzing' forever.
   useEffect(() => {
-    if (engineStatus === 'ready' && position !== null && preAnalysisRef.current === null && phase === 'playing') {
-      preAnalysisRef.current = analyze(position.fen);
+    if (
+      engineStatus === "ready" &&
+      position !== null &&
+      preAnalysisRef.current === null &&
+      phase === "playing"
+    ) {
+      preAnalysisRef.current = analyze(position.fen, settingsRef.current.moveTimeMs);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [engineStatus, phase]);
 
+  // Blitz countdown: tick every second while playing, auto-timeout at 0.
+  useEffect(() => {
+    if (phase !== "playing" || blitzTimeLeft === null) return;
+    if (blitzTimeLeft <= 0) {
+      // Time's up — score as off-book miss without a real move.
+      const pos = position;
+      if (!pos) return;
+      const delta = record(-1);
+      const timeoutResult = scoreMove("0000", "—", pos.gmMove, [], undefined, undefined);
+      setLastDelta(delta);
+      setResult(timeoutResult);
+      setResultArrows(buildResultArrows(pos.gmMove, engineMoves, "0000"));
+      setPhase("result");
+      return;
+    }
+    const id = setTimeout(() => setBlitzTimeLeft((t) => (t !== null ? t - 1 : null)), 1000);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [blitzTimeLeft, phase]);
+
+  function handleHint() {
+    if (phase !== "playing" || !position || hintUsed) return;
+    setHintUsed(true);
+    deductPoints(1);
+  }
+
   async function handleMove(uci: string) {
     if (phase !== "playing" || !position) return;
+    setBlitzTimeLeft(null); // stop blitz timer
     setPhase("loading");
 
     // Compute SAN from the FEN before awaiting anything (position is known here).
@@ -129,7 +180,7 @@ export default function App() {
       playerSanEarly = chessSan.move({
         from: uci.slice(0, 2) as Square,
         to: uci.slice(2, 4) as Square,
-        promotion: (uci[4] as 'q' | 'r' | 'b' | 'n' | undefined) ?? 'q',
+        promotion: (uci[4] as "q" | "r" | "b" | "n" | undefined) ?? "q",
       }).san;
     } catch {
       playerSanEarly = `${uci.slice(0, 2)}→${uci.slice(2, 4)}`;
@@ -144,7 +195,14 @@ export default function App() {
     } catch (err) {
       setEngineError(String(err));
       // Score without engine data: the move will be judged vs. the GM move only.
-      const moveResult = scoreMove(uci, playerSanEarly, position.gmMove, [], undefined, undefined);
+      const moveResult = scoreMove(
+        uci,
+        playerSanEarly,
+        position.gmMove,
+        [],
+        undefined,
+        undefined,
+      );
       const delta = record(moveResult.points);
       setLastDelta(delta);
       setResult(moveResult);
@@ -169,7 +227,14 @@ export default function App() {
       const errMsg = String(err);
       setEngineError(errMsg);
       preAnalysisRef.current = null;
-      const moveResult = scoreMove(uci, playerSanEarly, position.gmMove, [], undefined, undefined);
+      const moveResult = scoreMove(
+        uci,
+        playerSanEarly,
+        position.gmMove,
+        [],
+        undefined,
+        undefined,
+      );
       const delta = record(moveResult.points);
       setLastDelta(delta);
       setResult(moveResult);
@@ -191,7 +256,7 @@ export default function App() {
           from: move.slice(0, 2) as Square,
           to: move.slice(2, 4) as Square,
           // move is normalised to 4 chars; default to queen for evaluation purposes.
-          promotion: (move[4] as 'q' | 'r' | 'b' | 'n' | undefined) ?? 'q',
+          promotion: (move[4] as "q" | "r" | "b" | "n" | undefined) ?? "q",
         });
         const followUp = await analyze(chess.fen(), 500);
         if (!followUp[0]) return undefined;
@@ -245,7 +310,7 @@ export default function App() {
     prefetchResultRef.current = undefined;
     prefetchRef.current = fetchPosition()
       .then((pos) => {
-        preAnalysisRef.current = analyze(pos.fen);
+        preAnalysisRef.current = analyze(pos.fen, settingsRef.current.moveTimeMs);
         prefetchResultRef.current = pos;
         return pos;
       })
@@ -257,7 +322,7 @@ export default function App() {
 
   return (
     <div className="app">
-      <ScoreHeader scoreState={scoreState} />
+      <ScoreHeader scoreState={scoreState} onOpenSettings={() => setSettingsOpen(true)} />
 
       <main className="main">
         {phase === "loading" && !position && (
@@ -276,6 +341,13 @@ export default function App() {
               <span className="game-label">{position.label}</span>
             </div>
 
+            {/* Blitz countdown */}
+            {settings.blitzEnabled && phase === "playing" && blitzTimeLeft !== null && (
+              <div className={`blitz-timer${blitzTimeLeft <= 5 ? " blitz-timer--urgent" : ""}`}>
+                ⏱ {blitzTimeLeft}s
+              </div>
+            )}
+
             <div className="board-wrapper">
               <Board
                 key={position.fen}
@@ -283,6 +355,11 @@ export default function App() {
                 onMove={(uci) => void handleMove(uci)}
                 interactive={phase === "playing"}
                 arrows={phase === "result" ? resultArrows : []}
+                squareStyles={
+                  hintUsed && phase === "playing"
+                    ? { [position.gmMove.slice(0, 2)]: { backgroundColor: "rgba(96,165,250,0.45)" } }
+                    : {}
+                }
               />
             </div>
 
@@ -291,11 +368,18 @@ export default function App() {
                 className={`side-to-move__dot side-to-move__dot--${position.sideToMove}`}
               />
               {position.sideToMove === "white" ? "White" : "Black"} to move
+              {phase === "playing" && !hintUsed && (
+                <button className="btn-hint" onClick={handleHint} title="Reveal the piece to move (costs 1 pt)">
+                  💡 Hint (−1 pt)
+                </button>
+              )}
             </div>
 
             {phase === "loading" && (
               <div className="analyzing-indicator">
-                {engineStatus !== "error" && <div className="spinner spinner--sm" />}
+                {engineStatus !== "error" && (
+                  <div className="spinner spinner--sm" />
+                )}
                 <span>
                   {engineStatus === "loading"
                     ? "Loading Stockfish 18…"
@@ -326,6 +410,16 @@ export default function App() {
           </>
         )}
       </main>
+
+      {settingsOpen && (
+        <SettingsModal
+          settings={settings}
+          scoreState={scoreState}
+          onUpdateSettings={updateSettings}
+          onReset={reset}
+          onClose={() => setSettingsOpen(false)}
+        />
+      )}
     </div>
   );
 }
