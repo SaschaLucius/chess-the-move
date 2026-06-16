@@ -8,13 +8,21 @@ const ENGINE_URL = `${import.meta.env.BASE_URL}engine/stockfish-18-lite-single.j
 const MULTI_PV = 3
 const MOVE_TIME_MS = 1500
 
-export type EngineStatus = 'loading' | 'ready' | 'analyzing'
+export type EngineStatus = 'loading' | 'ready' | 'analyzing' | 'error'
+
+/** How long to wait for the engine to become ready before giving up (ms). */
+const LOAD_TIMEOUT_MS = 15_000
 
 interface PendingAnalysis {
   resolve: (moves: EngineMove[]) => void
   reject: (reason: Error) => void
   /** Latest candidate per MultiPV rank, keyed by rank (1..MULTI_PV). */
   lines: Map<number, EngineMove>
+}
+
+interface ReadyWaiter {
+  resolve: () => void
+  reject: (reason: Error) => void
 }
 
 /**
@@ -67,13 +75,42 @@ export function useStockfish() {
   const workerRef = useRef<Worker | null>(null)
   const pendingRef = useRef<PendingAnalysis | null>(null)
   const readyRef = useRef(false)
-  const waitersRef = useRef<Array<() => void>>([])
+  const errorRef = useRef(false)
+  const waitersRef = useRef<ReadyWaiter[]>([])
   const [status, setStatus] = useState<EngineStatus>('loading')
 
   useEffect(() => {
     let cancelled = false
     const worker = new Worker(ENGINE_URL)
     workerRef.current = worker
+
+    /** Shared failure path — sets error status and unblocks all waiters. */
+    const handleEngineError = (msg: string) => {
+      if (cancelled) return
+      errorRef.current = true
+      setStatus('error')
+      const err = new Error(msg)
+      // Reject any in-flight analysis.
+      if (pendingRef.current) {
+        pendingRef.current.reject(err)
+        pendingRef.current = null
+      }
+      // Reject all waiters so waitForReady() doesn't hang.
+      waitersRef.current.forEach(w => w.reject(err))
+      waitersRef.current = []
+    }
+
+    // Worker-level errors (WASM load failure, JS syntax error, etc.).
+    worker.onerror = (event: ErrorEvent) => {
+      handleEngineError(`Engine worker error: ${event.message}`)
+    }
+
+    // Timeout guard: if the engine isn't ready within LOAD_TIMEOUT_MS, give up.
+    const loadTimer = setTimeout(() => {
+      if (!readyRef.current) {
+        handleEngineError('Engine failed to load within timeout')
+      }
+    }, LOAD_TIMEOUT_MS)
 
     const handleLine = (line: string) => {
       // --- UCI handshake ---
@@ -85,8 +122,9 @@ export function useStockfish() {
       if (line.startsWith('readyok')) {
         if (!readyRef.current) {
           readyRef.current = true
+          clearTimeout(loadTimer)
           setStatus('ready')
-          waitersRef.current.forEach(r => r())
+          waitersRef.current.forEach(w => w.resolve())
           waitersRef.current = []
         }
         return
@@ -123,13 +161,16 @@ export function useStockfish() {
 
     return () => {
       cancelled = true
+      clearTimeout(loadTimer)
       readyRef.current = false
+      errorRef.current = false
       waitersRef.current = []
       // Reject any in-flight analysis so its awaiter doesn't hang.
       if (pendingRef.current) {
         pendingRef.current.reject(new Error('Engine terminated'))
         pendingRef.current = null
       }
+      worker.onerror = null
       worker.terminate()
       workerRef.current = null
     }
@@ -139,7 +180,7 @@ export function useStockfish() {
     return new Promise<EngineMove[]>((resolve, reject) => {
       const worker = workerRef.current
       if (!worker || !readyRef.current) {
-        reject(new Error('Engine is not ready yet'))
+        reject(new Error(errorRef.current ? 'Engine failed to load' : 'Engine is not ready yet'))
         return
       }
       // Abort any currently-running search before starting a new one.
@@ -158,8 +199,9 @@ export function useStockfish() {
 
   const waitForReady = useCallback((): Promise<void> => {
     if (readyRef.current) return Promise.resolve()
-    return new Promise(resolve => {
-      waitersRef.current.push(resolve)
+    if (errorRef.current) return Promise.reject(new Error('Engine failed to load'))
+    return new Promise((resolve, reject) => {
+      waitersRef.current.push({ resolve, reject })
     })
   }, [])
 

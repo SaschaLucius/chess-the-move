@@ -124,7 +124,22 @@ export default function App() {
 
     // If the engine was still loading when this position arrived, pre-analysis
     // hasn't started yet. Wait for the engine, then start (or reuse) it.
-    await waitForReady();
+    // waitForReady() rejects if the engine failed — catch it so the game can
+    // still score the move (without engine context) rather than hanging.
+    try {
+      await waitForReady();
+    } catch (err) {
+      setEngineError(String(err));
+      // Score without engine data: the move will be judged vs. the GM move only.
+      const moveResult = scoreMove(uci, uci, position.gmMove, [], undefined, undefined);
+      const delta = record(moveResult.points);
+      setLastDelta(delta);
+      setResult(moveResult);
+      setResultArrows(buildResultArrows(position.gmMove, [], uci));
+      setPhase("result");
+      return;
+    }
+
     if (!preAnalysisRef.current) {
       preAnalysisRef.current = analyze(position.fen);
     }
@@ -257,11 +272,13 @@ export default function App() {
 
             {phase === "loading" && (
               <div className="analyzing-indicator">
-                <div className="spinner spinner--sm" />
+                {engineStatus !== "error" && <div className="spinner spinner--sm" />}
                 <span>
                   {engineStatus === "loading"
                     ? "Loading Stockfish 18…"
-                    : "Analyzing…"}
+                    : engineStatus === "error"
+                      ? "Engine unavailable — scoring vs GM only"
+                      : "Analyzing…"}
                 </span>
               </div>
             )}
