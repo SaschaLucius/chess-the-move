@@ -39,7 +39,12 @@ export function SettingsModal({
 
         {/* ── Score & Streaks ── */}
         <section className="settings-section">
-          <h3 className="settings-section__title">Score</h3>
+          <h3 className="settings-section__title">
+            Score (
+            {MOVE_TIME_PRESETS.find((p) => p.ms === settings.moveTimeMs)
+              ?.label.split(" ")[0] ?? "Custom"}
+            )
+          </h3>
           <div className="settings-row settings-row--stats">
             <div className="settings-stat">
               <span className="settings-stat__value">

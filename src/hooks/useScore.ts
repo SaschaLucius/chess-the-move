@@ -1,11 +1,13 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ScoreState } from "../types";
 
-const STORAGE_KEY = "ctm-score-v1";
+function scoreKey(moveTimeMs: number): string {
+  return `ctm-score-v1-${moveTimeMs}`;
+}
 
-function loadState(): ScoreState {
+function loadState(key: string): ScoreState {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(key);
     if (raw) return JSON.parse(raw) as ScoreState;
   } catch {
     // corrupted storage — start fresh
@@ -13,24 +15,43 @@ function loadState(): ScoreState {
   return { totalPoints: 0, movesPlayed: 0, streak: 0, bestStreak: 0 };
 }
 
-function saveState(state: ScoreState): void {
+function saveState(key: string, state: ScoreState): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    localStorage.setItem(key, JSON.stringify(state));
   } catch {
     // Quota exceeded or private-browsing — silently ignore.
   }
 }
 
 /**
- * Manages the running score in localStorage.
+ * Manages the running score in localStorage, scoped per difficulty (moveTimeMs).
  *
  * `scoreState` is real React state so the UI re-renders whenever the score
  * changes. A ref mirror keeps the latest value readable synchronously inside
  * `record()` so consecutive calls compute the correct streak/delta.
  */
-export function useScore() {
-  const [scoreState, setScoreState] = useState<ScoreState>(loadState);
+export function useScore(moveTimeMs: number) {
+  // Store the last seen moveTimeMs to detect difficulty changes during render.
+  const [lastMs, setLastMs] = useState(moveTimeMs);
+  const [scoreState, setScoreState] = useState<ScoreState>(() =>
+    loadState(scoreKey(moveTimeMs)),
+  );
   const stateRef = useRef<ScoreState>(scoreState);
+  const keyRef = useRef(scoreKey(moveTimeMs));
+
+  // React "derived state from props" pattern: update state during render
+  // (guarded condition; no effect needed, no ref access).
+  if (lastMs !== moveTimeMs) {
+    setLastMs(moveTimeMs);
+    setScoreState(loadState(scoreKey(moveTimeMs)));
+  }
+
+  // Sync refs after every render (ref mutations only — no setState).
+  useEffect(() => {
+    stateRef.current = scoreState;
+    keyRef.current = scoreKey(moveTimeMs);
+  });
+
 
   const record = useCallback((points: number): number => {
     const prev = stateRef.current;
@@ -50,7 +71,7 @@ export function useScore() {
     };
     stateRef.current = next;
     setScoreState(next);
-    saveState(next);
+    saveState(keyRef.current, next);
     return delta;
   }, []);
 
@@ -63,7 +84,7 @@ export function useScore() {
     };
     stateRef.current = fresh;
     setScoreState(fresh);
-    saveState(fresh);
+    saveState(keyRef.current, fresh);
   }, []);
 
   /** Deduct `cost` from totalPoints (min 0) without affecting streak or movesPlayed. */
@@ -75,7 +96,7 @@ export function useScore() {
     };
     stateRef.current = next;
     setScoreState(next);
-    saveState(next);
+    saveState(keyRef.current, next);
   }, []);
 
   return { scoreState, record, reset, deductPoints };

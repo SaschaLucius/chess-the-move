@@ -20,8 +20,8 @@ type Phase = "loading" | "playing" | "result";
 export default function App() {
   const { status: engineStatus, analyze, waitForReady } = useStockfish();
   const { fetchPosition } = useLichess();
-  const { scoreState, record, reset, deductPoints } = useScore();
   const { settings, updateSettings } = useSettings();
+  const { scoreState, record, reset, deductPoints } = useScore(settings.moveTimeMs);
 
   const [phase, setPhase] = useState<Phase>("loading");
   const [position, setPosition] = useState<Position | null>(null);
