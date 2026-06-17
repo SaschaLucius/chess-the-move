@@ -28,6 +28,7 @@ export default function App() {
   const [engineMoves, setEngineMoves] = useState<EngineMove[]>([]);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [hintUsed, setHintUsed] = useState(false);
+  const [hintSquares, setHintSquares] = useState<string[]>([]);
   const [blitzTimeLeft, setBlitzTimeLeft] = useState<number | null>(null);
   const [result, setResult] = useState<MoveResult | null>(null);
   const [lastDelta, setLastDelta] = useState<number>(0);
@@ -72,6 +73,7 @@ export default function App() {
     setEngineError(null);
     setGmMoveEval(undefined);
     setHintUsed(false);
+    setHintSquares([]);
     setBlitzTimeLeft(null);
 
     try {
@@ -175,10 +177,23 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [blitzTimeLeft, phase]);
 
-  function handleHint() {
+  async function handleHint() {
     if (phase !== "playing" || !position || hintUsed) return;
     setHintUsed(true);
     deductPoints(1);
+    let moves: EngineMove[] = engineMoves;
+    if (preAnalysisRef.current) {
+      try {
+        moves = await preAnalysisRef.current;
+      } catch {
+        moves = [];
+      }
+    }
+    const squares = [
+      position.gmMove.slice(0, 2),
+      ...moves.map((m) => m.uci.slice(0, 2)),
+    ].filter((sq, i, arr) => arr.indexOf(sq) === i);
+    setHintSquares(squares);
   }
 
   async function handleMove(uci: string) {
@@ -370,7 +385,9 @@ export default function App() {
                 arrows={phase === "result" ? resultArrows : []}
                 squareStyles={
                   hintUsed && phase === "playing"
-                    ? { [position.gmMove.slice(0, 2)]: { backgroundColor: "rgba(96,165,250,0.45)" } }
+                    ? Object.fromEntries(
+                        hintSquares.map((sq) => [sq, { backgroundColor: "rgba(96,165,250,0.45)" }]),
+                      )
                     : {}
                 }
               />
