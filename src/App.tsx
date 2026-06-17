@@ -21,7 +21,7 @@ export default function App() {
   const { status: engineStatus, analyze, waitForReady } = useStockfish();
   const { fetchPosition } = useLichess();
   const { settings, updateSettings } = useSettings();
-  const { scoreState, record, reset, deductPoints } = useScore(settings.moveTimeMs);
+  const { scoreState, record, reset, deductPoints } = useScore(settings.moveTimeMs, settings.blitzEnabled, settings.blitzSeconds);
 
   const [phase, setPhase] = useState<Phase>("loading");
   const [position, setPosition] = useState<Position | null>(null);

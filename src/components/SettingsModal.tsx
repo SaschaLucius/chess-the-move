@@ -1,6 +1,7 @@
 import type { ScoreState } from "../types";
 import type { Settings } from "../hooks/useSettings";
 import { MOVE_TIME_PRESETS, BLITZ_TIME_PRESETS } from "../hooks/useSettings";
+import { buildScoreLabel } from "../hooks/useScore";
 
 interface SettingsModalProps {
   settings: Settings;
@@ -40,17 +41,20 @@ export function SettingsModal({
         {/* ── Score & Streaks ── */}
         <section className="settings-section">
           <h3 className="settings-section__title">
-            Score (
-            {MOVE_TIME_PRESETS.find((p) => p.ms === settings.moveTimeMs)
-              ?.label.split(" ")[0] ?? "Custom"}
-            )
+            {buildScoreLabel(settings.moveTimeMs, settings.blitzEnabled, settings.blitzSeconds)}
           </h3>
           <div className="settings-row settings-row--stats">
             <div className="settings-stat">
               <span className="settings-stat__value">
                 {scoreState.totalPoints}
               </span>
-              <span className="settings-stat__label">Total pts</span>
+              <span className="settings-stat__label">Pts</span>
+            </div>
+            <div className="settings-stat">
+              <span className="settings-stat__value">
+                {scoreState.maxPoints}
+              </span>
+              <span className="settings-stat__label">Max pts</span>
             </div>
             <div className="settings-stat">
               <span className="settings-stat__value">
@@ -60,15 +64,9 @@ export function SettingsModal({
             </div>
             <div className="settings-stat">
               <span className="settings-stat__value">
-                {scoreState.streak}🔥
+                {scoreState.bestStreak}🔥
               </span>
-              <span className="settings-stat__label">Streak</span>
-            </div>
-            <div className="settings-stat">
-              <span className="settings-stat__value">
-                {scoreState.bestStreak}⭐
-              </span>
-              <span className="settings-stat__label">Best</span>
+              <span className="settings-stat__label">Best streak</span>
             </div>
           </div>
           <button className="btn-reset" onClick={handleReset}>

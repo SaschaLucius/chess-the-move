@@ -3,10 +3,10 @@ import { useCallback, useState } from "react";
 const SETTINGS_KEY = "ctm-settings-v1";
 
 export const MOVE_TIME_PRESETS = [
-  { label: "Blitz (0.5s)", ms: 500 },
-  { label: "Fast (1s)", ms: 1000 },
-  { label: "Normal (1.5s)", ms: 1500 },
-  { label: "Deep (3s)", ms: 3000 },
+  { label: "Club (0.5s)", ms: 500 },
+  { label: "Candidate (1s)", ms: 1000 },
+  { label: "Master (1.5s)", ms: 1500 },
+  { label: "GM (3s)", ms: 3000 },
 ] as const;
 
 export const BLITZ_TIME_PRESETS = [

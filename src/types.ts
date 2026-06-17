@@ -80,6 +80,8 @@ export interface MoveResult {
 export interface ScoreState {
   /** Total points earned across all positions. */
   totalPoints: number;
+  /** All-time highest totalPoints ever reached. */
+  maxPoints: number;
   /** Number of positions the player has answered. */
   movesPlayed: number;
   /** Current consecutive streak of point-scoring guesses. */

@@ -1,8 +1,34 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ScoreState } from "../types";
 
-function scoreKey(moveTimeMs: number): string {
-  return `ctm-score-v1-${moveTimeMs}`;
+const DIFFICULTY_NAMES: Record<number, string> = {
+  500: "club",
+  1000: "candidate",
+  1500: "master",
+  3000: "gm",
+};
+
+const TIMER_NAMES: Record<number, string> = {
+  5: "bullet",
+  15: "blitz",
+  30: "rapid",
+  60: "classic",
+};
+
+function scoreKey(moveTimeMs: number, blitzEnabled: boolean, blitzSeconds: number): string {
+  const diff = DIFFICULTY_NAMES[moveTimeMs] ?? `${moveTimeMs}ms`;
+  if (!blitzEnabled) return `ctm-score-v1-${diff}`;
+  const timer = TIMER_NAMES[blitzSeconds] ?? `${blitzSeconds}s`;
+  return `ctm-score-v1-${diff}-${timer}`;
+}
+
+export function buildScoreLabel(moveTimeMs: number, blitzEnabled: boolean, blitzSeconds: number): string {
+  const diff = DIFFICULTY_NAMES[moveTimeMs] ?? `${moveTimeMs}ms`;
+  const diffLabel = diff.charAt(0).toUpperCase() + diff.slice(1);
+  if (!blitzEnabled) return `Score (${diffLabel})`;
+  const timer = TIMER_NAMES[blitzSeconds] ?? `${blitzSeconds}s`;
+  const timerLabel = timer.charAt(0).toUpperCase() + timer.slice(1);
+  return `Score (${diffLabel} + ${timerLabel})`;
 }
 
 function loadState(key: string): ScoreState {
@@ -12,7 +38,7 @@ function loadState(key: string): ScoreState {
   } catch {
     // corrupted storage — start fresh
   }
-  return { totalPoints: 0, movesPlayed: 0, streak: 0, bestStreak: 0 };
+  return { totalPoints: 0, maxPoints: 0, movesPlayed: 0, streak: 0, bestStreak: 0 };
 }
 
 function saveState(key: string, state: ScoreState): void {
@@ -30,26 +56,27 @@ function saveState(key: string, state: ScoreState): void {
  * changes. A ref mirror keeps the latest value readable synchronously inside
  * `record()` so consecutive calls compute the correct streak/delta.
  */
-export function useScore(moveTimeMs: number) {
-  // Store the last seen moveTimeMs to detect difficulty changes during render.
-  const [lastMs, setLastMs] = useState(moveTimeMs);
+export function useScore(moveTimeMs: number, blitzEnabled: boolean, blitzSeconds: number) {
+  // Store the last seen combo key to detect setting changes during render.
+  const currentKey = scoreKey(moveTimeMs, blitzEnabled, blitzSeconds);
+  const [lastKey, setLastKey] = useState(currentKey);
   const [scoreState, setScoreState] = useState<ScoreState>(() =>
-    loadState(scoreKey(moveTimeMs)),
+    loadState(currentKey),
   );
   const stateRef = useRef<ScoreState>(scoreState);
-  const keyRef = useRef(scoreKey(moveTimeMs));
+  const keyRef = useRef(currentKey);
 
   // React "derived state from props" pattern: update state during render
   // (guarded condition; no effect needed, no ref access).
-  if (lastMs !== moveTimeMs) {
-    setLastMs(moveTimeMs);
-    setScoreState(loadState(scoreKey(moveTimeMs)));
+  if (lastKey !== currentKey) {
+    setLastKey(currentKey);
+    setScoreState(loadState(currentKey));
   }
 
   // Sync refs after every render (ref mutations only — no setState).
   useEffect(() => {
     stateRef.current = scoreState;
-    keyRef.current = scoreKey(moveTimeMs);
+    keyRef.current = currentKey;
   });
 
 
@@ -63,8 +90,10 @@ export function useScore(moveTimeMs: number) {
     // Off-book penalty is already encoded as −1 in scoreMove
 
     const delta = points + streakBonus;
+    const newTotal = Math.max(0, prev.totalPoints + delta);
     const next: ScoreState = {
-      totalPoints: Math.max(0, prev.totalPoints + delta),
+      totalPoints: newTotal,
+      maxPoints: Math.max(prev.maxPoints, newTotal),
       movesPlayed: prev.movesPlayed + 1,
       streak,
       bestStreak: Math.max(prev.bestStreak, streak),
@@ -78,6 +107,7 @@ export function useScore(moveTimeMs: number) {
   const reset = useCallback(() => {
     const fresh: ScoreState = {
       totalPoints: 0,
+      maxPoints: 0,
       movesPlayed: 0,
       streak: 0,
       bestStreak: 0,
@@ -93,6 +123,7 @@ export function useScore(moveTimeMs: number) {
     const next: ScoreState = {
       ...prev,
       totalPoints: Math.max(0, prev.totalPoints - cost),
+      // maxPoints is not reduced by deductions
     };
     stateRef.current = next;
     setScoreState(next);
