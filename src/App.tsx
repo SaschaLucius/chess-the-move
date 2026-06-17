@@ -5,7 +5,7 @@ import type { EngineMove, Evaluation, MoveResult, Position } from "./types";
 import { useStockfish } from "./hooks/useStockfish";
 import { useLichess } from "./hooks/useLichess";
 import { useScore } from "./hooks/useScore";
-import { useSettings, ENGINE_FOLLOWUP_TIME_MS } from "./hooks/useSettings";
+import { useSettings, ENGINE_FOLLOWUP_TIME_MS, getEffectiveMoveTimeMs } from "./hooks/useSettings";
 import { scoreMove } from "./utils/scoring";
 import { Board } from "./components/Board";
 import { FeedbackPanel } from "./components/FeedbackPanel";
@@ -106,7 +106,8 @@ export default function App() {
         // Start pre-analysis only if engine is already ready; otherwise the
         // engineStatus effect below will kick it off once the engine is ready.
         if (engineStatusRef.current === "ready") {
-          preAnalysisRef.current = analyze(pos.fen, settingsRef.current.engineMoveTimeMs, settingsRef.current.engineElo);
+          const s = settingsRef.current;
+          preAnalysisRef.current = analyze(pos.fen, getEffectiveMoveTimeMs(s), s.engineElo);
         }
       }
 
@@ -139,7 +140,7 @@ export default function App() {
       preAnalysisRef.current === null &&
       phase === "playing"
     ) {
-      preAnalysisRef.current = analyze(position.fen, settingsRef.current.engineMoveTimeMs, settingsRef.current.engineElo);
+      preAnalysisRef.current = analyze(position.fen, getEffectiveMoveTimeMs(settingsRef.current), settingsRef.current.engineElo);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [engineStatus, phase]);
@@ -240,7 +241,7 @@ export default function App() {
     }
 
     if (!preAnalysisRef.current) {
-      preAnalysisRef.current = analyze(position.fen, settingsRef.current.engineMoveTimeMs, settingsRef.current.engineElo);
+      preAnalysisRef.current = analyze(position.fen, getEffectiveMoveTimeMs(settingsRef.current), settingsRef.current.engineElo);
     }
 
     let moves: EngineMove[];
@@ -338,7 +339,8 @@ export default function App() {
     prefetchResultRef.current = undefined;
     prefetchRef.current = fetchPosition()
       .then((pos) => {
-        preAnalysisRef.current = analyze(pos.fen, settingsRef.current.engineMoveTimeMs, settingsRef.current.engineElo);
+        const s = settingsRef.current;
+        preAnalysisRef.current = analyze(pos.fen, getEffectiveMoveTimeMs(s), s.engineElo);
         prefetchResultRef.current = pos;
         return pos;
       })

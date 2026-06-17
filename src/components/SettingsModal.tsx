@@ -1,6 +1,6 @@
 import type { ScoreState } from "../types";
 import type { Settings } from "../hooks/useSettings";
-import { MOVE_TIME_PRESETS, BLITZ_TIME_PRESETS, ENGINE_DEPTH_PRESETS } from "../hooks/useSettings";
+import { MOVE_TIME_PRESETS, BLITZ_TIME_PRESETS } from "../hooks/useSettings";
 import { buildScoreLabel } from "../hooks/useScore";
 
 interface SettingsModalProps {
@@ -86,25 +86,6 @@ export function SettingsModal({
                 key={String(p.elo)}
                 className={`preset-btn${settings.engineElo === p.elo ? " preset-btn--active" : ""}`}
                 onClick={() => onUpdateSettings({ engineElo: p.elo })}
-              >
-                {p.label}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        {/* ── Depth ── */}
-        <section className="settings-section">
-          <h3 className="settings-section__title">Analysis depth</h3>
-          <p className="settings-section__hint">
-            Max time Stockfish may spend per position. It can finish earlier if the position is clear.
-          </p>
-          <div className="preset-buttons">
-            {ENGINE_DEPTH_PRESETS.map((p) => (
-              <button
-                key={p.ms}
-                className={`preset-btn${settings.engineMoveTimeMs === p.ms ? " preset-btn--active" : ""}`}
-                onClick={() => onUpdateSettings({ engineMoveTimeMs: p.ms })}
               >
                 {p.label}
               </button>
