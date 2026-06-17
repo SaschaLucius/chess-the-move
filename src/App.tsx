@@ -145,6 +145,15 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [engineStatus, phase]);
 
+  // When difficulty changes while a position is active, discard the stale
+  // analysis (run with the old ELO/movetime) and restart with the new settings.
+  useEffect(() => {
+    if (engineStatus === "ready" && position !== null && phase === "playing") {
+      preAnalysisRef.current = analyze(position.fen, getEffectiveMoveTimeMs(settings), settings.engineElo);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings.engineElo]);
+
   // Blitz countdown: tick every second while playing, auto-timeout at 0.
   useEffect(() => {
     if (phase !== "playing" || blitzTimeLeft === null) return;
