@@ -33,11 +33,12 @@ export function buildResultArrows(
     arrows.push(uciToArrow(gmMove, "#3b82f6")); // blue
   }
 
-  // Always show the player's move arrow
+  // Only show player arrow when it's a miss (not covered by engine or GM arrow)
   const inEngine = engineMoves.some((m) => m.uci === playerMove);
-  const playerArrowColor =
-    inEngine || playerMove === gmMove ? "#60a5fa" : "#ef4444";
-  arrows.push(uciToArrow(playerMove, playerArrowColor));
+  const isMiss = !inEngine && playerMove !== gmMove;
+  if (isMiss) {
+    arrows.push(uciToArrow(playerMove, "#ef4444")); // red — matches badge--miss
+  }
 
   return arrows;
 }
