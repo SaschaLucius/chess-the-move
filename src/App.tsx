@@ -146,15 +146,28 @@ export default function App() {
   useEffect(() => {
     if (phase !== "playing" || blitzTimeLeft === null) return;
     if (blitzTimeLeft <= 0) {
-      // Time's up — score as off-book miss without a real move.
+      // Time's up — await the pre-analysis (likely already done) so we can
+      // show the engine's top moves in the result panel.
       const pos = position;
       if (!pos) return;
-      const delta = record(-1);
-      const timeoutResult = scoreMove("0000", "—", pos.gmMove, [], undefined, undefined);
-      setLastDelta(delta);
-      setResult(timeoutResult);
-      setResultArrows(buildResultArrows(pos.gmMove, engineMoves, "0000"));
-      setPhase("result");
+      void (async () => {
+        let moves: EngineMove[] = engineMoves;
+        if (preAnalysisRef.current) {
+          try {
+            moves = await preAnalysisRef.current;
+            preAnalysisRef.current = null;
+          } catch {
+            moves = [];
+          }
+        }
+        setEngineMoves(moves);
+        const delta = record(-1);
+        const timeoutResult = scoreMove("0000", "—", pos.gmMove, moves, undefined, undefined);
+        setLastDelta(delta);
+        setResult(timeoutResult);
+        setResultArrows(buildResultArrows(pos.gmMove, moves, "0000"));
+        setPhase("result");
+      })();
       return;
     }
     const id = setTimeout(() => setBlitzTimeLeft((t) => (t !== null ? t - 1 : null)), 1000);
