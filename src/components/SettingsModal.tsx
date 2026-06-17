@@ -28,7 +28,11 @@ export function SettingsModal({
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal__header">
           <h2 className="modal__title">Settings</h2>
-          <button className="modal__close" onClick={onClose} aria-label="Close settings">
+          <button
+            className="modal__close"
+            onClick={onClose}
+            aria-label="Close settings"
+          >
             ✕
           </button>
         </div>
@@ -38,19 +42,27 @@ export function SettingsModal({
           <h3 className="settings-section__title">Score</h3>
           <div className="settings-row settings-row--stats">
             <div className="settings-stat">
-              <span className="settings-stat__value">{scoreState.totalPoints}</span>
+              <span className="settings-stat__value">
+                {scoreState.totalPoints}
+              </span>
               <span className="settings-stat__label">Total pts</span>
             </div>
             <div className="settings-stat">
-              <span className="settings-stat__value">{scoreState.movesPlayed}</span>
+              <span className="settings-stat__value">
+                {scoreState.movesPlayed}
+              </span>
               <span className="settings-stat__label">Moves</span>
             </div>
             <div className="settings-stat">
-              <span className="settings-stat__value">{scoreState.streak}🔥</span>
+              <span className="settings-stat__value">
+                {scoreState.streak}🔥
+              </span>
               <span className="settings-stat__label">Streak</span>
             </div>
             <div className="settings-stat">
-              <span className="settings-stat__value">{scoreState.bestStreak}⭐</span>
+              <span className="settings-stat__value">
+                {scoreState.bestStreak}⭐
+              </span>
               <span className="settings-stat__label">Best</span>
             </div>
           </div>
@@ -62,7 +74,9 @@ export function SettingsModal({
         {/* ── Difficulty ── */}
         <section className="settings-section">
           <h3 className="settings-section__title">Engine difficulty</h3>
-          <p className="settings-section__hint">How long Stockfish analyses each position.</p>
+          <p className="settings-section__hint">
+            How long Stockfish analyses each position.
+          </p>
           <div className="preset-buttons">
             {MOVE_TIME_PRESETS.map((p) => (
               <button
@@ -78,26 +92,32 @@ export function SettingsModal({
 
         {/* ── Blitz mode ── */}
         <section className="settings-section">
-          <h3 className="settings-section__title">Blitz mode</h3>
-          <p className="settings-section__hint">Countdown timer — move before time runs out.</p>
+          <h3 className="settings-section__title">Timer mode</h3>
+          <p className="settings-section__hint">
+            Countdown timer — move before time runs out.
+          </p>
           <label className="toggle">
             <input
               type="checkbox"
               checked={settings.blitzEnabled}
-              onChange={(e) => onUpdateSettings({ blitzEnabled: e.target.checked })}
+              onChange={(e) =>
+                onUpdateSettings({ blitzEnabled: e.target.checked })
+              }
             />
             <span className="toggle__track" />
-            <span className="toggle__label">{settings.blitzEnabled ? "On" : "Off"}</span>
+            <span className="toggle__label">
+              {settings.blitzEnabled ? "On" : "Off"}
+            </span>
           </label>
           {settings.blitzEnabled && (
             <div className="preset-buttons" style={{ marginTop: "0.5rem" }}>
-              {BLITZ_TIME_PRESETS.map((s) => (
+              {BLITZ_TIME_PRESETS.map((p) => (
                 <button
-                  key={s}
-                  className={`preset-btn${settings.blitzSeconds === s ? " preset-btn--active" : ""}`}
-                  onClick={() => onUpdateSettings({ blitzSeconds: s })}
+                  key={p.s}
+                  className={`preset-btn${settings.blitzSeconds === p.s ? " preset-btn--active" : ""}`}
+                  onClick={() => onUpdateSettings({ blitzSeconds: p.s })}
                 >
-                  {s}s
+                  {p.s}s {p.label}
                 </button>
               ))}
             </div>

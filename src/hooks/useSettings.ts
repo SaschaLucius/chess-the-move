@@ -9,7 +9,12 @@ export const MOVE_TIME_PRESETS = [
   { label: "Deep (3s)", ms: 3000 },
 ] as const;
 
-export const BLITZ_TIME_PRESETS = [10, 15, 20, 30] as const;
+export const BLITZ_TIME_PRESETS = [
+  { label: "Bullet", s: 5 },
+  { label: "Blitz", s: 15 },
+  { label: "Rapid", s: 30 },
+  { label: "Classic", s: 60 },
+] as const;
 
 export interface Settings {
   /** Engine analysis time per position in milliseconds. */
