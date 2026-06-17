@@ -176,7 +176,7 @@ export function useStockfish() {
     }
   }, [])
 
-  const analyze = useCallback((fen: string, moveTimeMs = MOVE_TIME_MS): Promise<EngineMove[]> => {
+  const analyze = useCallback((fen: string, moveTimeMs = MOVE_TIME_MS, elo: number | null = null): Promise<EngineMove[]> => {
     return new Promise<EngineMove[]>((resolve, reject) => {
       const worker = workerRef.current
       if (!worker || !readyRef.current) {
@@ -192,6 +192,13 @@ export function useStockfish() {
       pendingRef.current = { resolve, reject, lines: new Map() }
       setStatus('analyzing')
       worker.postMessage('ucinewgame')
+      // Apply ELO strength limiting if requested.
+      if (elo !== null) {
+        worker.postMessage('setoption name UCI_LimitStrength value true')
+        worker.postMessage(`setoption name UCI_Elo value ${elo}`)
+      } else {
+        worker.postMessage('setoption name UCI_LimitStrength value false')
+      }
       worker.postMessage(`position fen ${fen}`)
       worker.postMessage(`go movetime ${moveTimeMs}`)
     })

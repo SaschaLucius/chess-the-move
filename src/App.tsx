@@ -5,7 +5,7 @@ import type { EngineMove, Evaluation, MoveResult, Position } from "./types";
 import { useStockfish } from "./hooks/useStockfish";
 import { useLichess } from "./hooks/useLichess";
 import { useScore } from "./hooks/useScore";
-import { useSettings } from "./hooks/useSettings";
+import { useSettings, ENGINE_FOLLOWUP_TIME_MS } from "./hooks/useSettings";
 import { scoreMove } from "./utils/scoring";
 import { Board } from "./components/Board";
 import { FeedbackPanel } from "./components/FeedbackPanel";
@@ -21,7 +21,7 @@ export default function App() {
   const { status: engineStatus, analyze, waitForReady } = useStockfish();
   const { fetchPosition } = useLichess();
   const { settings, updateSettings } = useSettings();
-  const { scoreState, record, reset, deductPoints } = useScore(settings.moveTimeMs, settings.blitzEnabled, settings.blitzSeconds);
+  const { scoreState, record, reset, deductPoints } = useScore(settings.engineElo, settings.blitzEnabled, settings.blitzSeconds);
 
   const [phase, setPhase] = useState<Phase>("loading");
   const [position, setPosition] = useState<Position | null>(null);
@@ -106,7 +106,7 @@ export default function App() {
         // Start pre-analysis only if engine is already ready; otherwise the
         // engineStatus effect below will kick it off once the engine is ready.
         if (engineStatusRef.current === "ready") {
-          preAnalysisRef.current = analyze(pos.fen, settingsRef.current.moveTimeMs);
+          preAnalysisRef.current = analyze(pos.fen, settingsRef.current.engineMoveTimeMs, settingsRef.current.engineElo);
         }
       }
 
@@ -139,7 +139,7 @@ export default function App() {
       preAnalysisRef.current === null &&
       phase === "playing"
     ) {
-      preAnalysisRef.current = analyze(position.fen, settingsRef.current.moveTimeMs);
+      preAnalysisRef.current = analyze(position.fen, settingsRef.current.engineMoveTimeMs, settingsRef.current.engineElo);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [engineStatus, phase]);
@@ -240,7 +240,7 @@ export default function App() {
     }
 
     if (!preAnalysisRef.current) {
-      preAnalysisRef.current = analyze(position.fen);
+      preAnalysisRef.current = analyze(position.fen, settingsRef.current.engineMoveTimeMs, settingsRef.current.engineElo);
     }
 
     let moves: EngineMove[];
@@ -286,7 +286,7 @@ export default function App() {
           // move is normalised to 4 chars; default to queen for evaluation purposes.
           promotion: (move[4] as "q" | "r" | "b" | "n" | undefined) ?? "q",
         });
-        const followUp = await analyze(chess.fen(), 500);
+        const followUp = await analyze(chess.fen(), ENGINE_FOLLOWUP_TIME_MS);
         if (!followUp[0]) return undefined;
         const raw = followUp[0].evaluation;
         return raw.type === "cp"
@@ -338,7 +338,7 @@ export default function App() {
     prefetchResultRef.current = undefined;
     prefetchRef.current = fetchPosition()
       .then((pos) => {
-        preAnalysisRef.current = analyze(pos.fen, settingsRef.current.moveTimeMs);
+        preAnalysisRef.current = analyze(pos.fen, settingsRef.current.engineMoveTimeMs, settingsRef.current.engineElo);
         prefetchResultRef.current = pos;
         return pos;
       })

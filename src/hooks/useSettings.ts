@@ -2,11 +2,20 @@ import { useCallback, useState } from "react";
 
 const SETTINGS_KEY = "ctm-settings-v1";
 
+/** Fixed think time for the follow-up eval after the player's off-book move (not configurable). */
+export const ENGINE_FOLLOWUP_TIME_MS = 500;
+
+export const ENGINE_DEPTH_PRESETS = [
+  { label: "Quick (1s)", ms: 1000 },
+  { label: "Normal (3s)", ms: 3000 },
+  { label: "Deep (5s)", ms: 5000 },
+] as const;
+
 export const MOVE_TIME_PRESETS = [
-  { label: "Club (0.5s)", ms: 500 },
-  { label: "Candidate (1s)", ms: 1000 },
-  { label: "Master (1.5s)", ms: 1500 },
-  { label: "GM (3s)", ms: 3000 },
+  { label: "Club (~1350)", elo: 1350 },
+  { label: "Candidate (~1600)", elo: 1600 },
+  { label: "Master (~2200)", elo: 2200 },
+  { label: "GM (full)", elo: null },
 ] as const;
 
 export const BLITZ_TIME_PRESETS = [
@@ -17,8 +26,10 @@ export const BLITZ_TIME_PRESETS = [
 ] as const;
 
 export interface Settings {
-  /** Engine analysis time per position in milliseconds. */
-  moveTimeMs: number;
+  /** Engine ELO cap (null = full strength). */
+  engineElo: number | null;
+  /** Max think time per position in milliseconds. */
+  engineMoveTimeMs: number;
   /** Whether the blitz countdown timer is active. */
   blitzEnabled: boolean;
   /** Seconds allowed per position in blitz mode. */
@@ -26,7 +37,8 @@ export interface Settings {
 }
 
 const DEFAULT_SETTINGS: Settings = {
-  moveTimeMs: 1500,
+  engineElo: 2200,
+  engineMoveTimeMs: 5000,
   blitzEnabled: false,
   blitzSeconds: 15,
 };

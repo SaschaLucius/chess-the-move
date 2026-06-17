@@ -2,10 +2,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { ScoreState } from "../types";
 
 const DIFFICULTY_NAMES: Record<number, string> = {
-  500: "club",
-  1000: "candidate",
-  1500: "master",
-  3000: "gm",
+  1350: "club",
+  1600: "candidate",
+  2200: "master",
 };
 
 const TIMER_NAMES: Record<number, string> = {
@@ -15,15 +14,15 @@ const TIMER_NAMES: Record<number, string> = {
   60: "classic",
 };
 
-function scoreKey(moveTimeMs: number, blitzEnabled: boolean, blitzSeconds: number): string {
-  const diff = DIFFICULTY_NAMES[moveTimeMs] ?? `${moveTimeMs}ms`;
+function scoreKey(engineElo: number | null, blitzEnabled: boolean, blitzSeconds: number): string {
+  const diff = engineElo === null ? "gm" : (DIFFICULTY_NAMES[engineElo] ?? `elo${engineElo}`);
   if (!blitzEnabled) return `ctm-score-v1-${diff}`;
   const timer = TIMER_NAMES[blitzSeconds] ?? `${blitzSeconds}s`;
   return `ctm-score-v1-${diff}-${timer}`;
 }
 
-export function buildScoreLabel(moveTimeMs: number, blitzEnabled: boolean, blitzSeconds: number): string {
-  const diff = DIFFICULTY_NAMES[moveTimeMs] ?? `${moveTimeMs}ms`;
+export function buildScoreLabel(engineElo: number | null, blitzEnabled: boolean, blitzSeconds: number): string {
+  const diff = engineElo === null ? "gm" : (DIFFICULTY_NAMES[engineElo] ?? `elo${engineElo}`);
   const diffLabel = diff.charAt(0).toUpperCase() + diff.slice(1);
   if (!blitzEnabled) return `Score (${diffLabel})`;
   const timer = TIMER_NAMES[blitzSeconds] ?? `${blitzSeconds}s`;
@@ -56,9 +55,9 @@ function saveState(key: string, state: ScoreState): void {
  * changes. A ref mirror keeps the latest value readable synchronously inside
  * `record()` so consecutive calls compute the correct streak/delta.
  */
-export function useScore(moveTimeMs: number, blitzEnabled: boolean, blitzSeconds: number) {
+export function useScore(engineElo: number | null, blitzEnabled: boolean, blitzSeconds: number) {
   // Store the last seen combo key to detect setting changes during render.
-  const currentKey = scoreKey(moveTimeMs, blitzEnabled, blitzSeconds);
+  const currentKey = scoreKey(engineElo, blitzEnabled, blitzSeconds);
   const [lastKey, setLastKey] = useState(currentKey);
   const [scoreState, setScoreState] = useState<ScoreState>(() =>
     loadState(currentKey),
