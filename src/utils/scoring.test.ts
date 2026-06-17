@@ -59,11 +59,50 @@ describe("scoreMove — off-engine cases", () => {
       "Nc3",
       "c2c4",
       top3,
-      { type: "cp", value: 50 }, // player eval
-      { type: "cp", value: 10 }, // GM eval
+      { type: "cp", value: 8 }, // player eval — beats GM (5cp) but not engine #3 (10cp)
+      { type: "cp", value: 5 },  // GM eval
     );
     expect(r.points).toBe(1);
     expect(r.reason).toBe("beat-gm");
+  });
+
+  it("player eval beats engine #1 → 3 pts, reason beat-engine-first", () => {
+    const r = scoreMove(
+      "h2h3",
+      "h3",
+      "c2c4",
+      top3,
+      { type: "cp", value: 50 }, // beats engine #1 (30cp)
+      { type: "cp", value: 5 },
+    );
+    expect(r.points).toBe(3);
+    expect(r.reason).toBe("beat-engine-first");
+  });
+
+  it("player eval beats engine #2 but not #1 → 2 pts, reason beat-engine-second", () => {
+    const r = scoreMove(
+      "h2h3",
+      "h3",
+      "c2c4",
+      top3,
+      { type: "cp", value: 25 }, // beats #2 (20cp) but not #1 (30cp)
+      { type: "cp", value: 5 },
+    );
+    expect(r.points).toBe(2);
+    expect(r.reason).toBe("beat-engine-second");
+  });
+
+  it("player eval beats engine #3 but not #2 → 1 pt, reason beat-engine-third", () => {
+    const r = scoreMove(
+      "h2h3",
+      "h3",
+      "c2c4",
+      top3,
+      { type: "cp", value: 15 }, // beats #3 (10cp) but not #2 (20cp)
+      { type: "cp", value: 5 },
+    );
+    expect(r.points).toBe(1);
+    expect(r.reason).toBe("beat-engine-third");
   });
 
   it("off-book, worse than GM eval → -1 pt, reason off-book", () => {
@@ -99,17 +138,17 @@ describe("scoreMove — edge cases", () => {
     expect(r.reason).toBe("off-book");
   });
 
-  it("mate eval beats GM cp eval for beat-gm path", () => {
+  it("mate eval also beats engine top moves → 3 pts beat-engine-first", () => {
     const r = scoreMove(
       "b1c3",
       "Nc3",
       "a2a3",
       top3,
-      { type: "mate", value: 5 }, // player finds mate
+      { type: "mate", value: 5 }, // player finds mate — beats engine #1 (30cp)
       { type: "cp", value: 30 }, // GM played modest move
     );
-    expect(r.points).toBe(1);
-    expect(r.reason).toBe("beat-gm");
+    expect(r.points).toBe(3);
+    expect(r.reason).toBe("beat-engine-first");
   });
 
   it("playerSan is preserved in result", () => {

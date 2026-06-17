@@ -53,19 +53,45 @@ export function scoreMove(
   } else if (engineRank === 3) {
     points = 1;
     reason = "engine-third";
-  } else if (matchedGm) {
-    points = 1;
-    reason = "gm-move";
-  } else if (
-    userMoveEval !== undefined &&
-    gmMoveEval !== undefined &&
-    evalToNumber(userMoveEval) > evalToNumber(gmMoveEval)
-  ) {
-    points = 1;
-    reason = "beat-gm";
   } else {
-    points = -1;
-    reason = "off-book";
+    // Check if the player's move is stronger than any of the engine's top suggestions.
+    const playerNum =
+      userMoveEval !== undefined ? evalToNumber(userMoveEval) : null;
+    const e1 = engineMoves.find((m) => m.rank === 1);
+    const e2 = engineMoves.find((m) => m.rank === 2);
+    const e3 = engineMoves.find((m) => m.rank === 3);
+
+    if (playerNum !== null && e1 && playerNum > evalToNumber(e1.evaluation)) {
+      points = 3;
+      reason = "beat-engine-first";
+    } else if (
+      playerNum !== null &&
+      e2 &&
+      playerNum > evalToNumber(e2.evaluation)
+    ) {
+      points = 2;
+      reason = "beat-engine-second";
+    } else if (
+      playerNum !== null &&
+      e3 &&
+      playerNum > evalToNumber(e3.evaluation)
+    ) {
+      points = 1;
+      reason = "beat-engine-third";
+    } else if (matchedGm) {
+      points = 1;
+      reason = "gm-move";
+    } else if (
+      playerNum !== null &&
+      gmMoveEval !== undefined &&
+      playerNum > evalToNumber(gmMoveEval)
+    ) {
+      points = 1;
+      reason = "beat-gm";
+    } else {
+      points = -1;
+      reason = "off-book";
+    }
   }
 
   return {

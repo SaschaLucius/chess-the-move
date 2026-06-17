@@ -47,6 +47,9 @@ export type ScoreReason =
   | "engine-second" // engine #2, no GM match → 2 pts
   | "gm-and-engine-third" // engine #3 + GM match → 2 pts
   | "engine-third" // engine #3, no GM match → 1 pt
+  | "beat-engine-first" // not in top-3 but eval beats engine #1 → 3 pts
+  | "beat-engine-second" // not in top-3 but eval beats engine #2 → 2 pts
+  | "beat-engine-third" // not in top-3 but eval beats engine #3 → 1 pt
   | "gm-move" // GM match, not in top 3 → 1 pt
   | "beat-gm" // off-book but better eval than GM → 1 pt
   | "off-book"; // none of the above → −1 pt
