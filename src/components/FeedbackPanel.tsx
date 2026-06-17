@@ -169,7 +169,7 @@ export function FeedbackPanel({
       </div>
 
       <button className="btn-next" onClick={onNext}>
-        Next Position →
+        Next Position
       </button>
     </div>
   );
